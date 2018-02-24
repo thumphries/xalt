@@ -34,7 +34,7 @@ xConfig =
 xKeys :: XConfig Layout -> Map (KeyMask, KeySym) (X ())
 xKeys =
   customKeys (const []) $ \(XConfig {modMask = mm}) -> [
-      ((mm, xF86XK_MonBrightnessDown), X.spawn "brightness down")
-    , ((mm, xF86XK_MonBrightnessUp), X.spawn "brightness up")
-    , ((mm .|. shiftMask, xK_R), X.restart "xalt" True)
+      ((mm, xF86XK_MonBrightnessDown), X.spawn "backlight down")
+    , ((mm, xF86XK_MonBrightnessUp), X.spawn "backlight up")
+    , ((mm .|. shiftMask, xK_r), X.restart "xalt" True)
     ]
