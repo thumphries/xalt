@@ -29,5 +29,7 @@ library
 
   build-depends:
                        base
+                     , containers
                      , xmonad
                      , xmonad-contrib
+                     , X11
