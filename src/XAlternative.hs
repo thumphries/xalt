@@ -16,6 +16,8 @@ import           XMonad.Actions.DwmPromote (dwmpromote)
 import           XMonad.Hooks.DynamicLog (statusBar, sjanssenPP, )
 import           XMonad.Hooks.ManageDocks (AvoidStruts)
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
+import           XMonad.Prompt.RunOrRaise (runOrRaisePrompt)
+import           XMonad.Prompt.XMonad (xmonadPrompt)
 import           XMonad.Util.CustomKeys (customKeys)
 
 
@@ -41,7 +43,12 @@ xKeys =
     , ((mm, xF86XK_MonBrightnessUp), X.spawn "backlight up")
     , ((mm .|. shiftMask, xK_r), X.restart "xalt" True)
     , ((mm, xK_Return), dwmpromote)
+    , ((mm, xK_r), runOrRaisePrompt X.def)
+    , ((mm, xK_x), xmonadPrompt X.def)
     ]
+
+-- -----------------------------------------------------------------------------
+-- XMobar
 
 xMobar :: XConfig Layouts -> IO (XConfig (ModifiedLayout AvoidStruts Layouts))
 xMobar =
