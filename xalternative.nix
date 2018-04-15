@@ -1,5 +1,6 @@
-{ mkDerivation, base, config-value, containers, lens-family-core
-, optparse-applicative, stdenv, text, X11, xmonad, xmonad-contrib
+{ mkDerivation, base, config-value, containers, microlens
+, optparse-applicative, stdenv, text, transformers, X11, xmonad
+, xmonad-contrib
 }:
 mkDerivation {
   pname = "xalternative";
@@ -8,7 +9,7 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    base config-value containers lens-family-core text X11 xmonad
+    base config-value containers microlens text transformers X11 xmonad
     xmonad-contrib
   ];
   executableHaskellDepends = [ base optparse-applicative ];

@@ -33,8 +33,9 @@ library
                        base
                      , config-value
                      , containers
-                     , lens-family-core
+                     , microlens
                      , text
+                     , transformers
                      , xmonad
                      , xmonad-contrib
                      , X11

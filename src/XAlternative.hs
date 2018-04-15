@@ -5,9 +5,13 @@ module XAlternative where
 import           Data.Bits ((.|.))
 import           Data.Map.Strict (Map)
 import           Data.Semigroup ((<>))
+import qualified Data.Text as T
 
 import           Graphics.X11.ExtraTypes.XF86
 import           Graphics.X11.Types
+
+import           XAlternative.Config (Config)
+import qualified XAlternative.Config as C
 
 import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
 import qualified XMonad as X
@@ -22,16 +26,16 @@ import           XMonad.Prompt.XMonad (xmonadPrompt)
 import           XMonad.Util.CustomKeys (customKeys)
 
 
-xAlternative :: IO ()
-xAlternative =
-  X.launch =<< yabar xConfig
+xAlternative :: Config -> IO ()
+xAlternative cfg =
+  X.launch =<< yabar (xConfig cfg)
 
 type Layouts = Choose Tall (Choose (Mirror Tall) Full)
 
-xConfig :: XConfig Layouts
-xConfig =
+xConfig :: Config -> XConfig Layouts
+xConfig (C.Config (C.General term)) =
   X.def {
-      terminal = "urxvtc"
+      terminal = T.unpack term
     , modMask = mod4Mask
     , borderWidth = 3
     , keys = xKeys
