@@ -17,6 +17,7 @@ executable xalt
   main-is:             xalt.hs
   build-depends:
                        base
+                     , optparse-applicative
                      , xalternative
 
 library
@@ -26,10 +27,14 @@ library
 
   exposed-modules:     
                        XAlternative
+                       XAlternative.Config
 
   build-depends:
                        base
+                     , config-value
                      , containers
+                     , lens-family-core
+                     , text
                      , xmonad
                      , xmonad-contrib
                      , X11
