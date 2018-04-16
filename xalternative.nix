@@ -1,6 +1,6 @@
-{ mkDerivation, base, config-value, containers, microlens
-, optparse-applicative, stdenv, text, transformers, X11, xmonad
-, xmonad-contrib
+{ mkDerivation, base, config-value, containers, directory
+, microlens, optparse-applicative, stdenv, text, transformers, X11
+, xmonad, xmonad-contrib
 }:
 mkDerivation {
   pname = "xalternative";
@@ -9,8 +9,8 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    base config-value containers microlens text transformers X11 xmonad
-    xmonad-contrib
+    base config-value containers directory microlens text transformers
+    X11 xmonad xmonad-contrib
   ];
   executableHaskellDepends = [ base optparse-applicative ];
   homepage = "https://github.com/thumphries/xalternative";

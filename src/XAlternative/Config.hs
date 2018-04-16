@@ -29,6 +29,7 @@ data Config = Config {
 
 data General = General {
     terminal :: Text
+  , borderWidth :: Integer
   } deriving (Eq, Ord, Show)
 
 
@@ -60,12 +61,14 @@ validateGeneral v =
   section "general" v $ \s ->
     General
       <$> section "terminal" s text
+      <*> section "border-width" s integer
 
 -- -----------------------------------------------------------------------------
 
 data ValidationError =
     MissingField CV.Position Text
   | ExpectedText CV.Position Value
+  | ExpectedNumber CV.Position Value
   | ErrorWithContext [Text] ValidationError
   deriving (Show)
 
@@ -115,6 +118,10 @@ key k val =
 text :: Value -> Validation Text
 text val =
   noteV (ExpectedText (CV.valueAnn val) val) (val ^? CL.text)
+
+integer :: Value -> Validation Integer
+integer val =
+  noteV (ExpectedNumber (CV.valueAnn val) val) (val ^? CL.number)
 
 noteV :: ValidationError -> Maybe a -> Validation a
 noteV x =
