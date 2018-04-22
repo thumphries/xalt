@@ -12,11 +12,12 @@ cabal-version:         >=1.10
 
 executable xalt
   default-language:    Haskell2010
-  ghc-options:         -Wall -Werror
+  ghc-options:         -Wall -Werror -O2 -threaded
   hs-source-dirs:      main
   main-is:             xalt.hs
   build-depends:
                        base
+                     , optparse-applicative
                      , xalternative
 
 library
@@ -26,8 +27,16 @@ library
 
   exposed-modules:     
                        XAlternative
+                       XAlternative.Config
 
   build-depends:
                        base
+                     , config-value
+                     , containers
+                     , directory
+                     , microlens
+                     , text
+                     , transformers
                      , xmonad
                      , xmonad-contrib
+                     , X11
