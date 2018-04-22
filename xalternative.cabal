@@ -38,6 +38,7 @@ library
   exposed-modules:     
                        XAlternative
                        XAlternative.Config
+                       XAlternative.Config.Validation
 
   build-depends:
                        base
