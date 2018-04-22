@@ -15,7 +15,7 @@ import qualified XAlternative.Config as C
 main :: IO ()
 main = do
   cfgf <- optparse
-  C.parseFile cfgf >>= \case
+  C.parseConfigFile cfgf >>= \case
     Right cfg ->
       xAlternative cfg
     Left errs -> do
