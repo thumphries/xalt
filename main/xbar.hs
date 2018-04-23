@@ -7,6 +7,7 @@ import qualified System.Taffybar as TM
 import qualified System.Taffybar.Battery as TB
 import qualified System.Taffybar.SimpleClock as TC
 import qualified System.Taffybar.TaffyPager as TP
+import qualified System.Taffybar.Pager as TP
 
 
 main :: IO ()
@@ -24,14 +25,14 @@ main = do
 pager :: IO Widget
 pager =
   TP.taffyPagerNew TP.PagerConfig {
-      activeWindow     = TP.escape . TP.shorten 140
-    , activeLayout     = TP.escape
-    , activeWorkspace  = TP.colorize "yellow" "" . TP.wrap "[" "]" . TP.escape
-    , hiddenWorkspace  = TP.escape
-    , emptyWorkspace   = TP.escape
-    , visibleWorkspace = TP.wrap "(" ")" . TP.escape
-    , urgentWorkspace  = TP.colorize "red" "yellow" . TP.escape
-    , widgetSep        = " : "
+      TP.activeWindow     = TP.escape . TP.shorten 140
+    , TP.activeLayout     = TP.escape
+    , TP.activeWorkspace  = TP.colorize "yellow" "" . TP.escape
+    , TP.hiddenWorkspace  = TP.escape
+    , TP.emptyWorkspace   = TP.escape
+    , TP.visibleWorkspace = TP.wrap "(" ")" . TP.escape
+    , TP.urgentWorkspace  = TP.colorize "red" "yellow" . TP.escape
+    , TP.widgetSep        = " : "
     }
 
 clock :: IO Widget
