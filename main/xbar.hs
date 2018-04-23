@@ -23,7 +23,16 @@ main = do
 
 pager :: IO Widget
 pager =
-  TP.taffyPagerNew TP.defaultPagerConfig
+  TP.taffyPagerNew TP.PagerConfig {
+      activeWindow     = TP.escape . TP.shorten 140
+    , activeLayout     = TP.escape
+    , activeWorkspace  = TP.colorize "yellow" "" . TP.wrap "[" "]" . TP.escape
+    , hiddenWorkspace  = TP.escape
+    , emptyWorkspace   = TP.escape
+    , visibleWorkspace = TP.wrap "(" ")" . TP.escape
+    , urgentWorkspace  = TP.colorize "red" "yellow" . TP.escape
+    , widgetSep        = " : "
+    }
 
 clock :: IO Widget
 clock =
