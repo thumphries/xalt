@@ -21,6 +21,8 @@ import qualified XAlternative.Config as C
 import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
 import qualified XMonad as X
 import           XMonad.Layout (Choose, Tall, Mirror, Full)
+import qualified XMonad.ManageHook as MH
+import           XMonad.StackSet (RationalRect (..))
 
 import           XMonad.Actions.DwmPromote (dwmpromote)
 import           XMonad.Hooks.EwmhDesktops (ewmh)
@@ -30,6 +32,7 @@ import           XMonad.Layout.LayoutModifier (ModifiedLayout)
 import           XMonad.Prompt.RunOrRaise (runOrRaisePrompt)
 import           XMonad.Prompt.XMonad (xmonadPrompt)
 import           XMonad.Util.CustomKeys (customKeys)
+import           XMonad.Util.NamedScratchpad as SP
 
 
 xAlternative :: Config -> IO ()
@@ -45,6 +48,7 @@ xConfig (C.Config (C.General term bWidth)) =
     , modMask = mod4Mask
     , borderWidth = fromIntegral bWidth
     , keys = xKeys
+    , manageHook = SP.namedScratchpadManageHook scratchpads
     }
 
 xKeys :: XConfig Layout -> Map (KeyMask, KeySym) (X ())
@@ -56,7 +60,21 @@ xKeys =
     , ((mm, xK_Return), dwmpromote)
     , ((mm, xK_r), runOrRaisePrompt X.def)
     , ((mm, xK_x), xmonadPrompt X.def)
+    , ((mm, xK_grave), SP.namedScratchpadAction scratchpads "terminal")
     ]
+
+scratchpads :: [SP.NamedScratchpad]
+scratchpads = [
+    SP.NS {
+        SP.name = "terminal"
+      , SP.cmd = "termite --role=scratchpad"
+      , SP.query = role MH.=? "scratchpad"
+      , SP.hook = rect 0.1 0.1 0.9 0.33
+      }
+  ]
+  where
+    role = MH.stringProperty "WM_WINDOW_ROLE"
+    rect x y w h = SP.customFloating (RationalRect x y w h)
 
 -- -----------------------------------------------------------------------------
 -- Taffybar
