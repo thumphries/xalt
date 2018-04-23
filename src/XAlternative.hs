@@ -54,8 +54,8 @@ xConfig (C.Config (C.General term bWidth)) =
 xKeys :: XConfig Layout -> Map (KeyMask, KeySym) (X ())
 xKeys =
   customKeys (const []) $ \(XConfig {modMask = mm}) -> [
-      ((mm, xF86XK_MonBrightnessDown), X.spawn "xbacklight -inc")
-    , ((mm, xF86XK_MonBrightnessUp), X.spawn "xbacklight -dec")
+      ((mm, xF86XK_MonBrightnessDown), X.spawn "xbacklight -inc 10")
+    , ((mm, xF86XK_MonBrightnessUp), X.spawn "xbacklight -dec 10")
     , ((mm .|. shiftMask, xK_r), X.restart "xalt" True)
     , ((mm, xK_Return), dwmpromote)
     , ((mm, xK_r), runOrRaisePrompt X.def)
