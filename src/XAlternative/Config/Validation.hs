@@ -6,10 +6,15 @@ module XAlternative.Config.Validation (
   , validateFile
   -- * Validation primitives
   , Validation
+  , (<||>)
+  , choice
   , Value
   , section
   , text
+  , atom
+  , atomConst
   , integer
+  , list
   ) where
 
 
@@ -45,8 +50,11 @@ validateFile fp k =
 
 data ValidationError =
     MissingField CV.Position Text
+  | ExpectedAtomConst CV.Position Text Text
+  | ExpectedAtom CV.Position Value
   | ExpectedText CV.Position Value
   | ExpectedNumber CV.Position Value
+  | ExpectedList CV.Position Value
   | ErrorWithContext [Text] ValidationError
   deriving (Show)
 
@@ -80,6 +88,22 @@ throwV err =
       [] -> err
       xs -> (ErrorWithContext xs err)
 
+choice :: Validation a -> Validation a -> Validation a
+choice va vb =
+  Validation . ReaderT $ \ctx ->
+    case runValidationCtx va ctx of
+      Right a ->
+        pure a
+      Left _es ->
+        case runValidationCtx vb ctx of
+          Right b ->
+            pure b
+          Left fs ->
+            failure fs
+
+(<||>) :: Validation a -> Validation a -> Validation a
+(<||>) = choice
+
 withContext :: Text -> Validation a -> Validation a
 withContext v (Validation k) =
   Validation $ RT.local (v:) k
@@ -97,9 +121,27 @@ text :: Value -> Validation Text
 text val =
   noteV (ExpectedText (CV.valueAnn val) val) (val ^? CL.text)
 
+atom :: Value -> Validation Text
+atom val =
+  CV.atomName <$> noteV (ExpectedAtom (CV.valueAnn val) val) (val ^? CL.atom)
+
+atomConst :: Text -> Value -> Validation Text
+atomConst expect val =
+  bindValidation (atom val) $ \name ->
+    if name == expect
+      then pure name
+      else throwV (ExpectedAtomConst (CV.valueAnn val) expect name)
+
+
 integer :: Value -> Validation Integer
 integer val =
   noteV (ExpectedNumber (CV.valueAnn val) val) (val ^? CL.number)
+
+list :: ([Value] -> Validation a) -> Value -> Validation a
+list k val =
+  bindValidation
+    (noteV (ExpectedList (CV.valueAnn val) val) (val ^? CL.list))
+    k
 
 noteV :: ValidationError -> Maybe a -> Validation a
 noteV x =
