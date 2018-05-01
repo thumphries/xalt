@@ -9,6 +9,7 @@ import           Data.Bits ((.|.))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 import           Graphics.X11.ExtraTypes.XF86
@@ -44,17 +45,17 @@ xAlternative cfg = do
 type Layouts = Choose Tall (Choose (Mirror Tall) Full)
 
 xConfig :: Config -> XConfig Layouts
-xConfig (C.Config (C.General term bWidth) keymap) =
+xConfig cfg@(C.Config (C.General term bWidth) _keymap) =
   X.def {
       terminal = T.unpack term
     , modMask = mod4Mask
     , borderWidth = fromIntegral bWidth
-    , keys = xKeys keymap
-    , manageHook = SP.namedScratchpadManageHook scratchpads
+    , keys = xKeys cfg
+    , manageHook = SP.namedScratchpadManageHook (scratchpads term)
     }
 
-xKeys :: C.KeyMap -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
-xKeys keymap c =
+xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
+xKeys (C.Config (C.General term _b) keymap) c =
   let
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
@@ -64,7 +65,7 @@ xKeys keymap c =
         , ((mm, xK_Return), dwmpromote)
         , ((mm, xK_r), runOrRaisePrompt X.def)
         , ((mm, xK_x), xmonadPrompt X.def)
-        , ((mm, xK_grave), SP.namedScratchpadAction scratchpads "terminal")
+        , ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
         ]) c
     ezkeys =
       EZ.mkKeymap c (fmap (bimap T.unpack xCmd) (M.toList (C.unKeyMap keymap)))
@@ -82,11 +83,12 @@ xCmd cmd =
 -- -----------------------------------------------------------------------------
 -- Scratchpads
 
-scratchpads :: [SP.NamedScratchpad]
-scratchpads = [
+scratchpads :: Text -> [SP.NamedScratchpad]
+scratchpads term = [
     SP.NS {
         SP.name = "terminal"
-      , SP.cmd = "termite --role=scratchpad"
+         -- FIX this only works for xterm/termite
+      , SP.cmd = T.unpack term <> " --role=scratchpad"
       , SP.query = role MH.=? "scratchpad"
       , SP.hook = rect 0.1 0.1 0.8 0.33
       }
