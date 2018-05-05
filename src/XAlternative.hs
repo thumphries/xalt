@@ -87,8 +87,8 @@ xCmd cmd =
 xManageHook :: Config -> X.ManageHook
 xManageHook (C.Config (C.General term _bWidth) _keymap rules) =
   MH.composeAll [
-      SP.namedScratchpadManageHook (scratchpads term)
-    , rulesHook rules
+      rulesHook rules
+    , SP.namedScratchpadManageHook (scratchpads term)
     ]
 
 rulesHook :: C.Rules -> X.ManageHook
@@ -96,8 +96,21 @@ rulesHook =
   MH.composeAll . fmap (uncurry rule) . M.toList . C.unRules
 
 rule :: C.Selector -> C.Action -> X.ManageHook
-rule (C.Role r) (C.Rect x y w h) =
-  role =? T.unpack r --> rect x y w h
+rule sel act =
+  selector sel --> action act
+
+selector :: C.Selector -> X.Query Bool
+selector sel =
+  case sel of
+    C.Role r -> role =? T.unpack r
+    C.Name n -> MH.title =? T.unpack n
+    C.Class c -> X.className =? T.unpack c
+
+action :: C.Action -> X.ManageHook
+action act =
+  case act of
+    C.Rect x y w h ->
+      rect x y w h
 
 role :: X.Query String
 role = MH.stringProperty "WM_WINDOW_ROLE"

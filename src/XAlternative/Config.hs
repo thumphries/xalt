@@ -46,6 +46,8 @@ newtype Rules = Rules {
 
 data Selector =
     Role Text
+  | Name Text
+  | Class Text
   deriving (Eq, Ord, Show)
 
 data Action =
@@ -93,7 +95,9 @@ validateRules v =
 
 validateSelector :: Value -> Validation Selector
 validateSelector v =
-  Role <$> section "role" v text
+       (Role <$> section "role" v text)
+  <||> (Name <$> section "name" v text)
+  <||> (Class <$> section "class" v text)
 
 validateAction :: Value -> Validation Action
 validateAction v =
