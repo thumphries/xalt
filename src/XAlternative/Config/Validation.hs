@@ -14,6 +14,8 @@ module XAlternative.Config.Validation (
   , atom
   , atomConst
   , integer
+  , float
+  , rational
   , list
   ) where
 
@@ -54,6 +56,7 @@ data ValidationError =
   | ExpectedAtom CV.Position Value
   | ExpectedText CV.Position Value
   | ExpectedNumber CV.Position Value
+  | ExpectedFloating CV.Position Value
   | ExpectedList CV.Position Value
   | ErrorWithContext [Text] ValidationError
   deriving (Show)
@@ -136,6 +139,18 @@ atomConst expect val =
 integer :: Value -> Validation Integer
 integer val =
   noteV (ExpectedNumber (CV.valueAnn val) val) (val ^? CL.number)
+
+float :: Value -> Validation Float
+float val =
+  case val of
+    CV.Floating _ann coef expn ->
+      pure (fromIntegral coef * (10.0 ^ expn))
+    _ ->
+      throwV (ExpectedFloating (CV.valueAnn val) val)
+
+rational :: Value -> Validation Rational
+rational =
+  fmap toRational . float
 
 list :: ([Value] -> Validation a) -> Value -> Validation a
 list k val =

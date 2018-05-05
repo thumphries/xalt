@@ -23,7 +23,7 @@ import qualified XAlternative.Config as C
 import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
 import qualified XMonad as X
 import           XMonad.Layout (Choose, Tall, Mirror, Full)
-import           XMonad.ManageHook ((=?))
+import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
 
@@ -46,7 +46,7 @@ xAlternative cfg = do
 type Layouts = Choose Tall (Choose (Mirror Tall) Full)
 
 xConfig :: Config -> XConfig Layouts
-xConfig cfg@(C.Config (C.General term bWidth) _keymap) =
+xConfig cfg@(C.Config (C.General term bWidth) _keymap _rules) =
   X.def {
       terminal = T.unpack term
     , modMask = mod4Mask
@@ -56,7 +56,7 @@ xConfig cfg@(C.Config (C.General term bWidth) _keymap) =
     }
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
-xKeys (C.Config (C.General term _b) keymap) c =
+xKeys (C.Config (C.General term _b) keymap _rules) c =
   let
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
@@ -85,10 +85,19 @@ xCmd cmd =
 -- ManageHook
 
 xManageHook :: Config -> X.ManageHook
-xManageHook (C.Config (C.General term _bWidth) _keymap) =
+xManageHook (C.Config (C.General term _bWidth) _keymap rules) =
   MH.composeAll [
       SP.namedScratchpadManageHook (scratchpads term)
+    , rulesHook rules
     ]
+
+rulesHook :: C.Rules -> X.ManageHook
+rulesHook =
+  MH.composeAll . fmap (uncurry rule) . M.toList . C.unRules
+
+rule :: C.Selector -> C.Action -> X.ManageHook
+rule (C.Role r) (C.Rect x y w h) =
+  role =? T.unpack r --> rect x y w h
 
 role :: X.Query String
 role = MH.stringProperty "WM_WINDOW_ROLE"
