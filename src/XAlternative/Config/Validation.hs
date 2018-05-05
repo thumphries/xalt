@@ -144,7 +144,7 @@ float :: Value -> Validation Float
 float val =
   case val of
     CV.Floating _ann coef expn ->
-      pure (fromIntegral coef * (10.0 ^ expn))
+      pure (fromIntegral coef * 10.0 ^^ expn)
     _ ->
       throwV (ExpectedFloating (CV.valueAnn val) val)
 
