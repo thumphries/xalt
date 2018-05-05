@@ -23,6 +23,7 @@ import qualified XAlternative.Config as C
 import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
 import qualified XMonad as X
 import           XMonad.Layout (Choose, Tall, Mirror, Full)
+import           XMonad.ManageHook ((=?))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
 
@@ -51,7 +52,7 @@ xConfig cfg@(C.Config (C.General term bWidth) _keymap) =
     , modMask = mod4Mask
     , borderWidth = fromIntegral bWidth
     , keys = xKeys cfg
-    , manageHook = SP.namedScratchpadManageHook (scratchpads term)
+    , manageHook = xManageHook cfg
     }
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
@@ -81,21 +82,33 @@ xCmd cmd =
       X.restart "xalt" True
 
 -- -----------------------------------------------------------------------------
+-- ManageHook
+
+xManageHook :: Config -> X.ManageHook
+xManageHook (C.Config (C.General term _bWidth) _keymap) =
+  MH.composeAll [
+      SP.namedScratchpadManageHook (scratchpads term)
+    ]
+
+role :: X.Query String
+role = MH.stringProperty "WM_WINDOW_ROLE"
+
+rect :: Rational -> Rational -> Rational -> Rational -> X.ManageHook
+rect x y w h = SP.customFloating (RationalRect x y w h)
+
+-- -----------------------------------------------------------------------------
 -- Scratchpads
 
 scratchpads :: Text -> [SP.NamedScratchpad]
 scratchpads term = [
     SP.NS {
         SP.name = "terminal"
-         -- FIX this only works for xterm/termite
+         -- FIX this role selector only works for xterm/termite
       , SP.cmd = T.unpack term <> " --role=scratchpad"
-      , SP.query = role MH.=? "scratchpad"
+      , SP.query = role =? "scratchpad"
       , SP.hook = rect 0.1 0.1 0.8 0.33
       }
   ]
-  where
-    role = MH.stringProperty "WM_WINDOW_ROLE"
-    rect x y w h = SP.customFloating (RationalRect x y w h)
 
 -- -----------------------------------------------------------------------------
 -- Taffybar
