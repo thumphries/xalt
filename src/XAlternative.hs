@@ -102,9 +102,12 @@ rule sel act =
 selector :: C.Selector -> X.Query Bool
 selector sel =
   case sel of
-    C.Role r -> role =? T.unpack r
-    C.Name n -> MH.title =? T.unpack n
-    C.Class c -> X.className =? T.unpack c
+    C.Role r ->
+      role =? T.unpack r
+    C.Name n ->
+      MH.title =? T.unpack n
+    C.Class c ->
+      X.className =? T.unpack c
 
 action :: C.Action -> X.ManageHook
 action act =
