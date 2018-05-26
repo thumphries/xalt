@@ -6,10 +6,10 @@ import           Graphics.UI.Gtk (Widget)
 import qualified System.Taffybar as T
 import qualified System.Taffybar.Battery as TB
 import qualified System.Taffybar.MPRIS2 as TM
-import qualified System.Taffybar.SimpleClock as TC
-import qualified System.Taffybar.TaffyPager as TP
 import qualified System.Taffybar.Pager as TP
+import qualified System.Taffybar.SimpleClock as TC
 import qualified System.Taffybar.Systray as TS
+import qualified System.Taffybar.TaffyPager as TP
 
 
 main :: IO ()
