@@ -38,6 +38,7 @@ newtype KeyMap = KeyMap {
 data Command =
     Spawn Text
   | Restart
+  | Promote
   deriving (Eq, Ord, Show)
 
 newtype Rules = Rules {
@@ -85,6 +86,7 @@ validateCommand :: Value -> Validation Command
 validateCommand v =
        (Spawn <$> section "spawn" v text)
   <||> (Restart <$ atomConst "restart" v)
+  <||> (Promote <$ atomConst "promote" v)
 
 validateRules :: Value -> Validation Rules
 validateRules v =

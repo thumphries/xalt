@@ -5,7 +5,6 @@ module XAlternative where
 import           Control.Monad (liftM2)
 
 import           Data.Bifunctor (bimap)
-import           Data.Bits ((.|.))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid ((<>))
@@ -32,8 +31,6 @@ import qualified XMonad.Hooks.EwmhDesktops as EWMH
 import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
 import qualified XMonad.Hooks.ManageDocks as Docks
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
-import           XMonad.Prompt.RunOrRaise (runOrRaisePrompt)
-import           XMonad.Prompt.XMonad (xmonadPrompt)
 import           XMonad.Util.CustomKeys (customKeys)
 import qualified XMonad.Util.EZConfig as EZ
 import qualified XMonad.Util.NamedScratchpad as SP
@@ -62,10 +59,6 @@ xKeys (C.Config (C.General term _b) keymap _rules) c =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
           ((mm, xF86XK_MonBrightnessDown), X.spawn "xbacklight -inc 10")
         , ((mm, xF86XK_MonBrightnessUp), X.spawn "xbacklight -dec 10")
-        , ((mm .|. shiftMask, xK_r), X.restart "xalt" True)
-        , ((mm, xK_Return), dwmpromote)
-        , ((mm, xK_r), runOrRaisePrompt X.def)
-        , ((mm, xK_x), xmonadPrompt X.def)
         , ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
         ]) c
     ezkeys =
@@ -80,6 +73,8 @@ xCmd cmd =
       X.spawn (T.unpack x)
     C.Restart ->
       X.restart "xalt" True
+    C.Promote ->
+      dwmpromote
 
 -- -----------------------------------------------------------------------------
 -- ManageHook
