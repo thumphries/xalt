@@ -57,9 +57,7 @@ xKeys (C.Config (C.General term _b) keymap _rules) c =
   let
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
-          ((mm, xF86XK_MonBrightnessDown), X.spawn "xbacklight -inc 10")
-        , ((mm, xF86XK_MonBrightnessUp), X.spawn "xbacklight -dec 10")
-        , ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
+          ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
         ]) c
     ezkeys =
       EZ.mkKeymap c (fmap (bimap T.unpack xCmd) (M.toList (C.unKeyMap keymap)))
