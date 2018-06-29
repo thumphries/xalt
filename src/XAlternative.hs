@@ -11,7 +11,6 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-import           Graphics.X11.ExtraTypes.XF86
 import           Graphics.X11.Types
 
 import qualified System.Taffybar.Hooks.PagerHints as TP
@@ -50,6 +49,7 @@ xConfig cfg@(C.Config (C.General term bWidth) _keymap _rules) =
     , borderWidth = fromIntegral bWidth
     , keys = xKeys cfg
     , manageHook = xManageHook cfg
+    , workspaces = "web" : ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     }
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
