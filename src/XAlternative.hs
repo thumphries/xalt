@@ -1,4 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE TypeOperators #-}
 module XAlternative where
 
 
@@ -8,19 +10,21 @@ import           Data.Bifunctor (bimap)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid ((<>))
+import           Data.Ratio ((%))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
 import           Graphics.X11.Types
 
-import qualified System.Taffybar.Hooks.PagerHints as TP
+import qualified System.Taffybar.Support.PagerHints as TP
 
 import           XAlternative.Config (Config)
 import qualified XAlternative.Config as C
 
 import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
 import qualified XMonad as X
-import           XMonad.Layout (Choose, Tall, Mirror, Full)
+import           XMonad.Layout ((|||), Choose, Tall (..), Mirror (..), Full (..))
+import           XMonad.Layout.Grid (Grid (..))
 import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
@@ -39,8 +43,6 @@ xAlternative :: Config -> IO ()
 xAlternative cfg = do
   X.launch $ taffybar (xConfig cfg)
 
-type Layouts = Choose Tall (Choose (Mirror Tall) Full)
-
 xConfig :: Config -> XConfig Layouts
 xConfig cfg@(C.Config (C.General term bWidth) _keymap _rules) =
   X.def {
@@ -48,8 +50,9 @@ xConfig cfg@(C.Config (C.General term bWidth) _keymap _rules) =
     , modMask = mod4Mask
     , borderWidth = fromIntegral bWidth
     , keys = xKeys cfg
+    , layoutHook = xLayoutHook
     , manageHook = xManageHook cfg
-    , workspaces = "web" : ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    , workspaces = "web" : "code" : ["3", "4", "5", "6", "7", "8", "9"]
     }
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
@@ -73,6 +76,21 @@ xCmd cmd =
       X.restart "xalt" True
     C.Promote ->
       dwmpromote
+
+-- -----------------------------------------------------------------------------
+-- LayoutHook
+
+type (|||) = Choose
+infixr 5 |||
+type Layouts = Tall ||| Mirror Tall ||| Grid ||| Full
+
+xLayoutHook :: Layouts a
+xLayoutHook =
+  let
+    tile = Tall 1 (3 % 100) (2 % 3)
+    mirr = Mirror tile
+  in
+    tile ||| mirr ||| Grid ||| Full
 
 -- -----------------------------------------------------------------------------
 -- ManageHook
