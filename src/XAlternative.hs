@@ -25,6 +25,7 @@ import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
 import qualified XMonad as X
 import           XMonad.Layout ((|||), Choose, Tall (..), Mirror (..), Full (..))
 import           XMonad.Layout.Grid (Grid (..))
+import           XMonad.Layout.Spacing (SpacingWithEdge, spacingWithEdge)
 import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
@@ -80,9 +81,11 @@ xCmd cmd =
 -- -----------------------------------------------------------------------------
 -- LayoutHook
 
+type Layouts = ModifiedLayout SpacingWithEdge Layouts'
+
 type (|||) = Choose
 infixr 5 |||
-type Layouts = Tall ||| Mirror Tall ||| Grid ||| Full
+type Layouts' = Tall ||| Mirror Tall ||| Grid ||| Full
 
 xLayoutHook :: Layouts a
 xLayoutHook =
@@ -90,7 +93,8 @@ xLayoutHook =
     tile = Tall 1 (3 % 100) (2 % 3)
     mirr = Mirror tile
   in
-    tile ||| mirr ||| Grid ||| Full
+    spacingWithEdge 6 $
+      tile ||| mirr ||| Grid ||| Full
 
 -- -----------------------------------------------------------------------------
 -- ManageHook
