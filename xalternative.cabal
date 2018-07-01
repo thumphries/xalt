@@ -27,7 +27,7 @@ executable xbar
   main-is:             xbar.hs
   build-depends:
                        base
-                     , gtk
+                     , gtk3
                      , taffybar
 
 library

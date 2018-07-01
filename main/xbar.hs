@@ -1,26 +1,30 @@
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
 module Main where
 
 
 import           Graphics.UI.Gtk (Widget)
 
 import qualified System.Taffybar as T
-import qualified System.Taffybar.Battery as TB
-import qualified System.Taffybar.MPRIS2 as TM
-import qualified System.Taffybar.Pager as TP
-import qualified System.Taffybar.SimpleClock as TC
-import qualified System.Taffybar.Systray as TS
-import qualified System.Taffybar.TaffyPager as TP
+import           System.Taffybar.Context (TaffyIO)
+import qualified System.Taffybar.SimpleConfig as SC
+import qualified System.Taffybar.Widget.Battery as TB
+import qualified System.Taffybar.Widget.Layout as TL
+import qualified System.Taffybar.Widget.MPRIS2 as TM
+import qualified System.Taffybar.Widget.SimpleClock as TC
+import qualified System.Taffybar.Widget.Systray as TS
+import qualified System.Taffybar.Widget.Workspaces as TW
 
 import           Text.Printf (printf)
 
 
 main :: IO ()
 main = do
-  T.taffybarMain T.defaultTaffybarConfig {
-      T.startWidgets = [
-          pager
+  T.startTaffybar . SC.toTaffyConfig $ SC.defaultSimpleTaffyConfig {
+      SC.startWidgets = [
+          workspaces
+        , layout
         ]
-    , T.endWidgets = [
+    , SC.endWidgets = [
           systray
         , clock
         , battery
@@ -28,18 +32,27 @@ main = do
         ]
     }
 
-pager :: IO Widget
-pager =
-  TP.taffyPagerNew TP.PagerConfig {
-      TP.activeWindow     = TP.escape . TP.shorten 200
-    , TP.activeLayout     = TP.escape
-    , TP.activeWorkspace  = TP.colorize "yellow" "" . TP.escape . iconWorkspace
-    , TP.hiddenWorkspace  = TP.escape . iconWorkspace
-    , TP.emptyWorkspace   = TP.escape . iconWorkspace
-    , TP.visibleWorkspace = TP.wrap "(" ")" . TP.escape
-    , TP.urgentWorkspace  = TP.colorize "red" "yellow" . TP.escape . iconWorkspace
-    , TP.widgetSep        = " : "
+workspaces :: TaffyIO Widget
+workspaces =
+  TW.workspacesNew TW.defaultWorkspacesConfig {
+      TW.labelSetter = workspaceLabel
+    -- Disable taffybar-2.0 icon nonsense
+    , TW.getWindowIconPixbuf = \_ _ -> return Nothing
+    , TW.maxIcons = Just 0
     }
+
+workspaceLabel :: TW.Workspace -> TW.WorkspacesIO String
+workspaceLabel (TW.Workspace _idx name state _windows) =
+  let
+    color =
+      case state of
+        TW.Active ->
+          colorize "yellow"
+        _ ->
+          id
+
+  in
+    return . text $ color (iconWorkspace name)
 
 iconWorkspace :: String -> String
 iconWorkspace ws =
@@ -48,35 +61,51 @@ iconWorkspace ws =
     "code" -> iconCode
     a -> a
 
-systray :: IO Widget
+layout :: TaffyIO Widget
+layout =
+  TL.layoutNew TL.defaultLayoutConfig {
+      TL.formatLayout = pure . text
+    }
+
+systray :: TaffyIO Widget
 systray =
   TS.systrayNew
 
-clock :: IO Widget
+clock :: TaffyIO Widget
 clock =
-  TC.textClockNew Nothing (fontAwesome iconClock ++ " %a %b %d %Y %H:%M") 60.0
+  TC.textClockNew Nothing (text $ iconClock ++ " %a %b %d %Y %H:%M") 60.0
 
-battery :: IO Widget
+battery :: TaffyIO Widget
 battery =
-  TB.textBatteryNew (iconBattery ++ " $percentage$%") 60.0
+  TB.textBatteryNew (text $ iconBattery ++ " $percentage$%")
 
-music :: IO Widget
+music :: TaffyIO Widget
 music =
   TM.mpris2New
 
 -- -----------------------------------------------------------------------------
 
+text :: String -> String
+text =
+  printf "<span font_desc='Cantarell'>%s</span>"
+
 fontAwesome :: String -> String
 fontAwesome = printf "<span font_desc='Font Awesome 5 Free'>%s</span>"
 
 iconWeb :: String
-iconWeb = "\xf268"
+iconWeb = fontAwesome "\xf268"
 
 iconCode :: String
-iconCode = "\xf121"
+iconCode = fontAwesome "\xf121"
 
 iconClock :: String
-iconClock = "\xf017"
+iconClock = fontAwesome "\xf017"
 
 iconBattery :: String
-iconBattery = "\xf242"
+iconBattery = fontAwesome "\xf242"
+
+colorize :: String -> String -> String
+colorize fg val = printf "<span%s>%s</span>" (attr "fg" fg) val
+  where
+    attr :: String -> String -> String
+    attr name value = printf " %scolor=\"%s\"" name value

@@ -1,4 +1,4 @@
-{ mkDerivation, base, config-value, containers, directory, gtk
+{ mkDerivation, base, config-value, containers, directory, gtk3
 , microlens, optparse-applicative, stdenv, taffybar, text
 , transformers, X11, xmonad, xmonad-contrib
 }:
@@ -13,7 +13,7 @@ mkDerivation {
     transformers X11 xmonad xmonad-contrib
   ];
   executableHaskellDepends = [
-    base gtk optparse-applicative taffybar
+    base gtk3 optparse-applicative taffybar
   ];
   homepage = "https://github.com/thumphries/xalternative";
   description = "XMonad+";
