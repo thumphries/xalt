@@ -42,17 +42,8 @@ workspaces =
     }
 
 workspaceLabel :: TW.Workspace -> TW.WorkspacesIO String
-workspaceLabel (TW.Workspace _idx name state _windows) =
-  let
-    color =
-      case state of
-        TW.Active ->
-          colorize "yellow"
-        _ ->
-          id
-
-  in
-    return . text $ color (iconWorkspace name)
+workspaceLabel (TW.Workspace _idx name _state _windows) =
+  return $ iconWorkspace name
 
 iconWorkspace :: String -> String
 iconWorkspace ws =
@@ -64,7 +55,7 @@ iconWorkspace ws =
 layout :: TaffyIO Widget
 layout =
   TL.layoutNew TL.defaultLayoutConfig {
-      TL.formatLayout = pure . text
+      TL.formatLayout = pure
     }
 
 systray :: TaffyIO Widget
@@ -73,11 +64,11 @@ systray =
 
 clock :: TaffyIO Widget
 clock =
-  TC.textClockNew Nothing (text $ iconClock ++ " %a %b %d %Y %H:%M") 60.0
+  TC.textClockNew Nothing (iconClock ++ " %a %b %d %Y %H:%M") 60.0
 
 battery :: TaffyIO Widget
 battery =
-  TB.textBatteryNew (text $ iconBattery ++ " $percentage$%")
+  TB.textBatteryNew (iconBattery ++ " $percentage$%")
 
 music :: TaffyIO Widget
 music =
@@ -85,12 +76,8 @@ music =
 
 -- -----------------------------------------------------------------------------
 
-text :: String -> String
-text =
-  printf "<span font_desc='Cantarell'>%s</span>"
-
 fontAwesome :: String -> String
-fontAwesome = printf "<span font_desc='Font Awesome 5 Free'>%s</span>"
+fontAwesome = printf "<span font_desc='Font Awesome 5 Free' font_size='large'>%s</span>"
 
 iconWeb :: String
 iconWeb = fontAwesome "\xf268"
@@ -103,9 +90,3 @@ iconClock = fontAwesome "\xf017"
 
 iconBattery :: String
 iconBattery = fontAwesome "\xf242"
-
-colorize :: String -> String -> String
-colorize fg val = printf "<span%s>%s</span>" (attr "fg" fg) val
-  where
-    attr :: String -> String -> String
-    attr name value = printf " %scolor=\"%s\"" name value
