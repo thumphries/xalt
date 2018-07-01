@@ -35,8 +35,8 @@ import           Text.Printf (printf)
 main :: IO ()
 main = do
   T.startTaffybar . SC.toTaffyConfig $ SC.defaultSimpleTaffyConfig {
-      SC.barHeight = 30
-    , SC.widgetSpacing = 30
+      SC.barHeight = 32
+    , SC.widgetSpacing = 16
     , SC.startWidgets = [
           workspaces
         , layout
@@ -81,7 +81,7 @@ systray =
 
 clock :: TaffyIO Widget
 clock =
-  TC.textClockNew Nothing ("%a %b %d %Y %H:%M") 60.0
+  TC.textClockNew Nothing ("<span font_weight=\"bold\">%a %b %d %Y %H:%M</span>") 60.0
 
 music :: TaffyIO Widget
 music =
