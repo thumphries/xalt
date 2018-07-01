@@ -1,27 +1,31 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE TypeOperators #-}
 module XAlternative where
 
 
 import           Control.Monad (liftM2)
 
 import           Data.Bifunctor (bimap)
-import           Data.Bits ((.|.))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid ((<>))
+import           Data.Ratio ((%))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
-import           Graphics.X11.ExtraTypes.XF86
 import           Graphics.X11.Types
 
-import qualified System.Taffybar.Hooks.PagerHints as TP
+import qualified System.Taffybar.Support.PagerHints as TP
 
 import           XAlternative.Config (Config)
 import qualified XAlternative.Config as C
 
 import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
 import qualified XMonad as X
-import           XMonad.Layout (Choose, Tall, Mirror, Full)
+import           XMonad.Layout ((|||), Choose, Tall (..), Mirror (..), Full (..))
+import           XMonad.Layout.Grid (Grid (..))
+import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
 
@@ -30,8 +34,6 @@ import qualified XMonad.Hooks.EwmhDesktops as EWMH
 import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
 import qualified XMonad.Hooks.ManageDocks as Docks
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
-import           XMonad.Prompt.RunOrRaise (runOrRaisePrompt)
-import           XMonad.Prompt.XMonad (xmonadPrompt)
 import           XMonad.Util.CustomKeys (customKeys)
 import qualified XMonad.Util.EZConfig as EZ
 import qualified XMonad.Util.NamedScratchpad as SP
@@ -41,30 +43,24 @@ xAlternative :: Config -> IO ()
 xAlternative cfg = do
   X.launch $ taffybar (xConfig cfg)
 
-type Layouts = Choose Tall (Choose (Mirror Tall) Full)
-
 xConfig :: Config -> XConfig Layouts
-xConfig (C.Config (C.General term bWidth) keymap) =
+xConfig cfg@(C.Config (C.General term bWidth) _keymap _rules) =
   X.def {
       terminal = T.unpack term
     , modMask = mod4Mask
     , borderWidth = fromIntegral bWidth
-    , keys = xKeys keymap
-    , manageHook = SP.namedScratchpadManageHook scratchpads
+    , keys = xKeys cfg
+    , layoutHook = xLayoutHook
+    , manageHook = xManageHook cfg
+    , workspaces = "web" : "code" : ["3", "4", "5", "6", "7", "8", "9"]
     }
 
-xKeys :: C.KeyMap -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
-xKeys keymap c =
+xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
+xKeys (C.Config (C.General term _b) keymap _rules) c =
   let
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
-          ((mm, xF86XK_MonBrightnessDown), X.spawn "xbacklight -inc 10")
-        , ((mm, xF86XK_MonBrightnessUp), X.spawn "xbacklight -dec 10")
-        , ((mm .|. shiftMask, xK_r), X.restart "xalt" True)
-        , ((mm, xK_Return), dwmpromote)
-        , ((mm, xK_r), runOrRaisePrompt X.def)
-        , ((mm, xK_x), xmonadPrompt X.def)
-        , ((mm, xK_grave), SP.namedScratchpadAction scratchpads "terminal")
+          ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
         ]) c
     ezkeys =
       EZ.mkKeymap c (fmap (bimap T.unpack xCmd) (M.toList (C.unKeyMap keymap)))
@@ -78,22 +74,77 @@ xCmd cmd =
       X.spawn (T.unpack x)
     C.Restart ->
       X.restart "xalt" True
+    C.Promote ->
+      dwmpromote
+
+-- -----------------------------------------------------------------------------
+-- LayoutHook
+
+type (|||) = Choose
+infixr 5 |||
+type Layouts = Tall ||| Mirror Tall ||| Grid ||| Full
+
+xLayoutHook :: Layouts a
+xLayoutHook =
+  let
+    tile = Tall 1 (3 % 100) (2 % 3)
+    mirr = Mirror tile
+  in
+    tile ||| mirr ||| Grid ||| Full
+
+-- -----------------------------------------------------------------------------
+-- ManageHook
+
+xManageHook :: Config -> X.ManageHook
+xManageHook (C.Config (C.General term _bWidth) _keymap rules) =
+  MH.composeAll [
+      rulesHook rules
+    , SP.namedScratchpadManageHook (scratchpads term)
+    ]
+
+rulesHook :: C.Rules -> X.ManageHook
+rulesHook =
+  MH.composeAll . fmap (uncurry rule) . M.toList . C.unRules
+
+rule :: C.Selector -> C.Action -> X.ManageHook
+rule sel act =
+  selector sel --> action act
+
+selector :: C.Selector -> X.Query Bool
+selector sel =
+  case sel of
+    C.Role r ->
+      role =? T.unpack r
+    C.Name n ->
+      MH.title =? T.unpack n
+    C.Class c ->
+      X.className =? T.unpack c
+
+action :: C.Action -> X.ManageHook
+action act =
+  case act of
+    C.Rect x y w h ->
+      rect x y w h
+
+role :: X.Query String
+role = MH.stringProperty "WM_WINDOW_ROLE"
+
+rect :: Rational -> Rational -> Rational -> Rational -> X.ManageHook
+rect x y w h = SP.customFloating (RationalRect x y w h)
 
 -- -----------------------------------------------------------------------------
 -- Scratchpads
 
-scratchpads :: [SP.NamedScratchpad]
-scratchpads = [
+scratchpads :: Text -> [SP.NamedScratchpad]
+scratchpads term = [
     SP.NS {
         SP.name = "terminal"
-      , SP.cmd = "termite --role=scratchpad"
-      , SP.query = role MH.=? "scratchpad"
+         -- FIX this role selector only works for xterm/termite
+      , SP.cmd = T.unpack term <> " --role=scratchpad"
+      , SP.query = role =? "scratchpad"
       , SP.hook = rect 0.1 0.1 0.8 0.33
       }
   ]
-  where
-    role = MH.stringProperty "WM_WINDOW_ROLE"
-    rect x y w h = SP.customFloating (RationalRect x y w h)
 
 -- -----------------------------------------------------------------------------
 -- Taffybar

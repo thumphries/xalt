@@ -5,6 +5,9 @@ module XAlternative.Config (
   , General (..)
   , KeyMap (..)
   , Command (..)
+  , Rules (..)
+  , Selector (..)
+  , Action (..)
   , parseConfigFile
   ) where
 
@@ -20,6 +23,7 @@ import           XAlternative.Config.Validation
 data Config = Config {
     general :: General
   , keyMap :: KeyMap
+  , rules :: Rules
   } deriving (Eq, Ord, Show)
 
 data General = General {
@@ -34,6 +38,21 @@ newtype KeyMap = KeyMap {
 data Command =
     Spawn Text
   | Restart
+  | Promote
+  deriving (Eq, Ord, Show)
+
+newtype Rules = Rules {
+    unRules :: Map Selector Action
+  } deriving (Eq, Ord, Show, Monoid)
+
+data Selector =
+    Role Text
+  | Name Text
+  | Class Text
+  deriving (Eq, Ord, Show)
+
+data Action =
+    Rect Rational Rational Rational Rational
   deriving (Eq, Ord, Show)
 
 -- -----------------------------------------------------------------------------
@@ -47,6 +66,7 @@ validateConfig v =
   Config
     <$> validateGeneral v
     <*> validateKeyMap v
+    <*> validateRules v
 
 validateGeneral :: Value -> Validation General
 validateGeneral v =
@@ -66,3 +86,26 @@ validateCommand :: Value -> Validation Command
 validateCommand v =
        (Spawn <$> section "spawn" v text)
   <||> (Restart <$ atomConst "restart" v)
+  <||> (Promote <$ atomConst "promote" v)
+
+validateRules :: Value -> Validation Rules
+validateRules v =
+  section "rules" v . list $ \rs ->
+    fmap (Rules . M.fromList) . for rs $ \sa ->
+      (,) <$> section "selector" sa validateSelector
+          <*> section "action" sa validateAction
+
+validateSelector :: Value -> Validation Selector
+validateSelector v =
+       (Role <$> section "role" v text)
+  <||> (Name <$> section "name" v text)
+  <||> (Class <$> section "class" v text)
+
+validateAction :: Value -> Validation Action
+validateAction v =
+  section "rect" v $ \r ->
+    Rect
+      <$> section "x" r rational
+      <*> section "y" r rational
+      <*> section "w" r rational
+      <*> section "h" r rational
