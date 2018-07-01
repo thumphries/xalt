@@ -85,7 +85,9 @@ type Layouts = ModifiedLayout SpacingWithEdge Layouts'
 
 type (|||) = Choose
 infixr 5 |||
+
 type Layouts' = Tall ||| Mirror Tall ||| Grid ||| Full
+
 
 xLayoutHook :: Layouts a
 xLayoutHook =
