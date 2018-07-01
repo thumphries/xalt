@@ -1,13 +1,26 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 module Main where
 
 
+import           Control.Monad (void)
+import           Control.Monad.Reader (ask, runReaderT)
+import           Control.Monad.IO.Class (liftIO)
+
+import           Data.GI.Gtk.Threading (postGUIASync)
+import           Data.Text (Text)
+import qualified Data.Text as T
+
+import qualified GI.Gtk as GI
+
 import           Graphics.UI.Gtk (Widget)
 
 import qualified System.Taffybar as T
+import           System.Taffybar.Compat.GtkLibs (fromGIWidget)
 import           System.Taffybar.Context (TaffyIO)
+import qualified System.Taffybar.Information.Battery as IB
 import qualified System.Taffybar.SimpleConfig as SC
-import qualified System.Taffybar.Widget.Battery as TB
+import qualified System.Taffybar.Widget.Generic.ChannelWidget as CW
 import qualified System.Taffybar.Widget.Layout as TL
 import qualified System.Taffybar.Widget.MPRIS2 as TM
 import qualified System.Taffybar.Widget.SimpleClock as TC
@@ -20,7 +33,9 @@ import           Text.Printf (printf)
 main :: IO ()
 main = do
   T.startTaffybar . SC.toTaffyConfig $ SC.defaultSimpleTaffyConfig {
-      SC.startWidgets = [
+      SC.barHeight = 30
+    , SC.widgetSpacing = 30
+    , SC.startWidgets = [
           workspaces
         , layout
         ]
@@ -64,15 +79,54 @@ systray =
 
 clock :: TaffyIO Widget
 clock =
-  TC.textClockNew Nothing (iconClock ++ " %a %b %d %Y %H:%M") 60.0
-
-battery :: TaffyIO Widget
-battery =
-  TB.textBatteryNew (iconBattery ++ " $percentage$%")
+  TC.textClockNew Nothing ("%a %b %d %Y %H:%M") 60.0
 
 music :: TaffyIO Widget
 music =
   TM.mpris2New
+
+-- -----------------------------------------------------------------------------
+
+battery :: TaffyIO Widget
+battery =
+  fromGIWidget =<< do
+    chan <- IB.getDisplayBatteryChan
+    ctx <- ask
+    let getBatteryInfoIO = runReaderT IB.getDisplayBatteryInfo ctx
+    liftIO $ do
+      label <- batteryFormat <$> getBatteryInfoIO >>= GI.labelNew . Just
+      let setMarkup = postGUIASync . GI.labelSetMarkup label
+          updateWidget = setMarkup . batteryFormat
+      void $ GI.onWidgetRealize label (getBatteryInfoIO >>= updateWidget)
+      GI.toWidget =<< CW.channelWidgetNew label chan updateWidget
+
+batteryFormat :: IB.BatteryInfo -> Text
+batteryFormat info =
+  let
+    battPctNum :: Int
+    battPctNum =
+      floor (IB.batteryPercentage info)
+
+{--
+    battState :: IB.BatteryState
+    battState =
+      IB.batteryState info
+
+    battTime :: Maybe Int64
+    battTime =
+      case battState of
+        IB.BatteryStateCharging ->
+          Just (IB.batteryTimeToFull info)
+        IB.BatteryStateDischarging ->
+          Just (IB.batteryTimeToEmpty info)
+--}
+  in
+    T.pack $ case battPctNum of
+      pct | pct >= 95 -> iconBatteryFull
+          | pct >= 66 -> iconBatteryThreeQuarter
+          | pct >= 33 -> iconBatteryHalf
+          | pct >= 10 -> iconBatteryQuarter
+          | otherwise -> iconBatteryEmpty
 
 -- -----------------------------------------------------------------------------
 
@@ -88,5 +142,17 @@ iconCode = fontAwesome "\xf121"
 iconClock :: String
 iconClock = fontAwesome "\xf017"
 
-iconBattery :: String
-iconBattery = fontAwesome "\xf242"
+iconBatteryEmpty :: String
+iconBatteryEmpty = fontAwesome "\xf244"
+
+iconBatteryQuarter :: String
+iconBatteryQuarter = fontAwesome "\xf243"
+
+iconBatteryHalf :: String
+iconBatteryHalf = fontAwesome "\xf242"
+
+iconBatteryThreeQuarter :: String
+iconBatteryThreeQuarter = fontAwesome "\xf241"
+
+iconBatteryFull :: String
+iconBatteryFull = fontAwesome "\xf240"
