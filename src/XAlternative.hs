@@ -23,8 +23,9 @@ import qualified XAlternative.Config as C
 
 import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
 import qualified XMonad as X
-import           XMonad.Layout ((|||), Choose, Tall (..), Mirror (..), Full (..))
+import           XMonad.Layout ((|||), Choose, Tall (..), Full (..))
 import           XMonad.Layout.Grid (Grid (..))
+import           XMonad.Layout.Spacing (SpacingWithEdge, spacingWithEdge)
 import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
@@ -34,6 +35,7 @@ import qualified XMonad.Hooks.EwmhDesktops as EWMH
 import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
 import qualified XMonad.Hooks.ManageDocks as Docks
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
+import           XMonad.Layout.Reflect (Reflect, reflectHoriz)
 import           XMonad.Util.CustomKeys (customKeys)
 import qualified XMonad.Util.EZConfig as EZ
 import qualified XMonad.Util.NamedScratchpad as SP
@@ -80,17 +82,22 @@ xCmd cmd =
 -- -----------------------------------------------------------------------------
 -- LayoutHook
 
+type Layouts = ModifiedLayout SpacingWithEdge Layouts'
+
 type (|||) = Choose
 infixr 5 |||
-type Layouts = Tall ||| Mirror Tall ||| Grid ||| Full
+
+type Layouts' = Tall ||| ModifiedLayout Reflect Tall ||| Grid ||| Full
+
 
 xLayoutHook :: Layouts a
 xLayoutHook =
   let
     tile = Tall 1 (3 % 100) (2 % 3)
-    mirr = Mirror tile
+    refl = reflectHoriz tile
   in
-    tile ||| mirr ||| Grid ||| Full
+    spacingWithEdge 6 $
+      tile ||| refl ||| Grid ||| Full
 
 -- -----------------------------------------------------------------------------
 -- ManageHook
