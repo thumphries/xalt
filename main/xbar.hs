@@ -24,7 +24,6 @@ import qualified System.Taffybar.Widget.Generic.ChannelWidget as CW
 import qualified System.Taffybar.Widget.Layout as TL
 import qualified System.Taffybar.Widget.MPRIS2 as TM
 import qualified System.Taffybar.Widget.SimpleClock as TC
-import qualified System.Taffybar.Widget.SNITray as TS
 import qualified System.Taffybar.Widget.Workspaces as TW
 
 import           Text.Printf (printf)
@@ -40,8 +39,7 @@ main = do
         , layout
         ]
     , SC.endWidgets = [
-          snitray
-        , clock
+          clock
         , battery
         , music
         ]
@@ -73,10 +71,6 @@ layout =
   TL.layoutNew TL.defaultLayoutConfig {
       TL.formatLayout = pure
     }
-
-snitray :: TaffyIO Widget
-snitray =
-  TS.sniTrayNew
 
 clock :: TaffyIO Widget
 clock =
