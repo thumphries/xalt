@@ -14,6 +14,7 @@ module XAlternative.Config (
 
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import           Data.Semigroup (Semigroup)
 import           Data.Text (Text)
 import           Data.Traversable (for)
 
@@ -33,7 +34,7 @@ data General = General {
 
 newtype KeyMap = KeyMap {
     unKeyMap :: Map Text Command
-  } deriving (Eq, Ord, Show, Monoid)
+  } deriving (Eq, Ord, Show, Semigroup, Monoid)
 
 data Command =
     Spawn Text
@@ -43,7 +44,7 @@ data Command =
 
 newtype Rules = Rules {
     unRules :: Map Selector Action
-  } deriving (Eq, Ord, Show, Monoid)
+  } deriving (Eq, Ord, Show, Semigroup, Monoid)
 
 data Selector =
     Role Text
