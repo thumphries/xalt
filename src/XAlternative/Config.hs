@@ -30,6 +30,8 @@ data Config = Config {
 data General = General {
     terminal :: Text
   , borderWidth :: Integer
+  , normalBorderColor :: Text
+  , focusedBorderColor :: Text
   } deriving (Eq, Ord, Show)
 
 newtype KeyMap = KeyMap {
@@ -75,6 +77,8 @@ validateGeneral v =
     General
       <$> section "terminal" s text
       <*> section "border-width" s integer
+      <*> section "border-color" s text
+      <*> section "border-color-focused" s text
 
 validateKeyMap :: Value -> Validation KeyMap
 validateKeyMap v =

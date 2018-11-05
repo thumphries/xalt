@@ -45,11 +45,13 @@ xAlternative cfg = do
   X.launch $ taffybar (xConfig cfg)
 
 xConfig :: Config -> XConfig Layouts
-xConfig cfg@(C.Config (C.General term bWidth) _keymap _rules) =
+xConfig cfg@(C.Config (C.General term bWidth nBorder fBorder) _keymap _rules) =
   X.def {
       terminal = T.unpack term
     , modMask = mod4Mask
     , borderWidth = fromIntegral bWidth
+    , normalBorderColor = T.unpack nBorder
+    , focusedBorderColor = T.unpack fBorder
     , keys = xKeys cfg
     , layoutHook = xLayoutHook
     , manageHook = xManageHook cfg
@@ -57,7 +59,7 @@ xConfig cfg@(C.Config (C.General term bWidth) _keymap _rules) =
     }
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
-xKeys (C.Config (C.General term _b) keymap _rules) c =
+xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
   let
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
@@ -99,7 +101,7 @@ xLayoutHook =
 -- ManageHook
 
 xManageHook :: Config -> X.ManageHook
-xManageHook (C.Config (C.General term _bWidth) _keymap rules) =
+xManageHook (C.Config (C.General term _bWidth _bNorm _bFoc) _keymap rules) =
   MH.composeAll [
       rulesHook rules
     , SP.namedScratchpadManageHook (scratchpads term)
