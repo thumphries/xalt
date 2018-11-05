@@ -25,7 +25,6 @@ import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
 import qualified XMonad as X
 import           XMonad.Layout ((|||), Choose, Tall (..), Full (..))
 import           XMonad.Layout.Grid (Grid (..))
-import           XMonad.Layout.Spacing (SpacingWithEdge, spacingWithEdge)
 import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
@@ -54,7 +53,7 @@ xConfig cfg@(C.Config (C.General term bWidth) _keymap _rules) =
     , keys = xKeys cfg
     , layoutHook = xLayoutHook
     , manageHook = xManageHook cfg
-    , workspaces = "web" : "code" : ["3", "4", "5", "6", "7", "8", "9"]
+    , workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     }
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
@@ -82,12 +81,10 @@ xCmd cmd =
 -- -----------------------------------------------------------------------------
 -- LayoutHook
 
-type Layouts = ModifiedLayout SpacingWithEdge Layouts'
-
 type (|||) = Choose
 infixr 5 |||
 
-type Layouts' = Tall ||| ModifiedLayout Reflect Tall ||| Grid ||| Full
+type Layouts = Tall ||| ModifiedLayout Reflect Tall ||| Grid ||| Full
 
 
 xLayoutHook :: Layouts a
@@ -96,8 +93,7 @@ xLayoutHook =
     tile = Tall 1 (3 % 100) (2 % 3)
     refl = reflectHoriz tile
   in
-    spacingWithEdge 6 $
-      tile ||| refl ||| Grid ||| Full
+    tile ||| refl ||| Grid ||| Full
 
 -- -----------------------------------------------------------------------------
 -- ManageHook

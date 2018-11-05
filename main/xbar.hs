@@ -13,12 +13,10 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
+import           GI.Gtk (Widget)
 import qualified GI.Gtk as GI
 
-import           Graphics.UI.Gtk (Widget)
-
 import qualified System.Taffybar as T
-import           System.Taffybar.Compat.GtkLibs (fromGIWidget)
 import           System.Taffybar.Context (TaffyIO)
 import qualified System.Taffybar.Information.Battery as IB
 import qualified System.Taffybar.SimpleConfig as SC
@@ -26,7 +24,7 @@ import qualified System.Taffybar.Widget.Generic.ChannelWidget as CW
 import qualified System.Taffybar.Widget.Layout as TL
 import qualified System.Taffybar.Widget.MPRIS2 as TM
 import qualified System.Taffybar.Widget.SimpleClock as TC
-import qualified System.Taffybar.Widget.Systray as TS
+import qualified System.Taffybar.Widget.SNITray as TS
 import qualified System.Taffybar.Widget.Workspaces as TW
 
 import           Text.Printf (printf)
@@ -42,7 +40,7 @@ main = do
         , layout
         ]
     , SC.endWidgets = [
-          systray
+          snitray
         , clock
         , battery
         , music
@@ -65,6 +63,7 @@ workspaceLabel (TW.Workspace _idx name _state _windows) =
 iconWorkspace :: String -> String
 iconWorkspace ws =
   case ws of
+    -- TODO this is unused
     "web" -> iconWeb
     "code" -> iconCode
     a -> a
@@ -75,9 +74,9 @@ layout =
       TL.formatLayout = pure
     }
 
-systray :: TaffyIO Widget
-systray =
-  TS.systrayNew
+snitray :: TaffyIO Widget
+snitray =
+  TS.sniTrayNew
 
 clock :: TaffyIO Widget
 clock =
@@ -90,21 +89,20 @@ music =
 -- -----------------------------------------------------------------------------
 
 battery :: TaffyIO Widget
-battery =
-  fromGIWidget =<< do
-    chan <- IB.getDisplayBatteryChan
-    ctx <- ask
-    let getBatteryInfoIO = runReaderT IB.getDisplayBatteryInfo ctx
-    liftIO $ do
-      label <- fst . batteryFormat <$> getBatteryInfoIO >>= GI.labelNew . Just
-      let setMarkup = postGUIASync . GI.labelSetMarkup label
-          setTooltip = postGUIASync . GI.widgetSetTooltipMarkup label . Just
-          updateWidget info = do
-            let (w, t) = batteryFormat info
-            setMarkup w
-            setTooltip t
-      void $ GI.onWidgetRealize label (getBatteryInfoIO >>= updateWidget)
-      GI.toWidget =<< CW.channelWidgetNew label chan updateWidget
+battery = do
+  chan <- IB.getDisplayBatteryChan
+  ctx <- ask
+  let getBatteryInfoIO = runReaderT IB.getDisplayBatteryInfo ctx
+  liftIO $ do
+    label <- fst . batteryFormat <$> getBatteryInfoIO >>= GI.labelNew . Just
+    let setMarkup = postGUIASync . GI.labelSetMarkup label
+        setTooltip = postGUIASync . GI.widgetSetTooltipMarkup label . Just
+        updateWidget info = do
+          let (w, t) = batteryFormat info
+          setMarkup w
+          setTooltip t
+    void $ GI.onWidgetRealize label (getBatteryInfoIO >>= updateWidget)
+    GI.toWidget =<< CW.channelWidgetNew label chan updateWidget
 
 batteryFormat :: IB.BatteryInfo -> (Text, Text)
 batteryFormat info =
