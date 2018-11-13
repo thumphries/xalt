@@ -37,6 +37,7 @@ import           XMonad.Layout.CenteredMaster (CenteredMaster, centerMaster)
 import           XMonad.Layout.Decoration (Decoration, DefaultShrinker, shrinkText)
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
 import           XMonad.Layout.Reflect (Reflect, reflectHoriz)
+import           XMonad.Layout.Renamed (Rename (..), renamed)
 import           XMonad.Layout.Simplest (Simplest)
 import           XMonad.Layout.Tabbed (TabbedDecoration, tabbedAlways)
 import qualified XMonad.Layout.Tabbed as Tabbed
@@ -92,31 +93,58 @@ xCmd cmd =
 type (|||) = Choose
 infixr 5 |||
 
-type Tabbed =
-  ModifiedLayout (Decoration TabbedDecoration DefaultShrinker) Simplest
+
 
 type Layouts =
-      Mirror Tall
-  ||| Tall
-  ||| ModifiedLayout Reflect Tall
-  ||| ThreeCol
-  ||| Grid
-  ||| ModifiedLayout CenteredMaster Grid
+      Split
+  ||| TileLeft
+  ||| TileRight
+  ||| Lane
+  ||| Tile
+  ||| Pile
   ||| Tabbed
   ||| Full
+
+type Renamed l =
+  ModifiedLayout Rename l
+
+type Split =
+  Renamed (Mirror Tall)
+
+type TileLeft =
+  Renamed Tall
+
+type TileRight =
+  Renamed (ModifiedLayout Reflect TileLeft)
+
+type Lane =
+  Renamed ThreeCol
+
+type Tile =
+  Renamed Grid
+
+type Pile =
+  Renamed (ModifiedLayout CenteredMaster Grid)
+
+type Tabbed =
+  Renamed (ModifiedLayout (Decoration TabbedDecoration DefaultShrinker) Simplest)
 
 
 xLayoutHook :: Layouts Window
 xLayoutHook =
   let
-    tile = Tall 1 (2 % 100) (7 % 10)
-    dish = Mirror (Tall 2 (2 % 100) (4 % 5))
-    col3 = ThreeColMid 1 (3 % 100) (1 % 2)
-    refl = reflectHoriz tile
-    tabs = tabbedAlways shrinkText tabsTheme
-    magn = centerMaster Grid
+    rename x = renamed [Replace x]
+
+    splt = rename "Split" $ Mirror (Tall 2 (2 % 100) (4 % 5))
+    sptl = rename "Left" $ Tall 1 (2 % 100) (7 % 10)
+    sptr = rename "Right" $ reflectHoriz sptl
+    lane = rename "Lane" $ ThreeColMid 1 (3 % 100) (1 % 2)
+    tile = rename "Tile" Grid
+    tabs = rename "Tabs" $ tabbedAlways shrinkText tabsTheme
+    magn = rename "Pile" $ centerMaster Grid
+    full = Full
   in
-    dish ||| tile ||| refl ||| col3 ||| Grid ||| magn ||| tabs ||| Full
+    splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
 
 tabsTheme :: Tabbed.Theme
 tabsTheme =
