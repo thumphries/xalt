@@ -23,7 +23,7 @@ import qualified XAlternative.Config as C
 
 import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
 import qualified XMonad as X
-import           XMonad.Layout ((|||), Choose, Tall (..), Full (..))
+import           XMonad.Layout ((|||), Choose, Tall (..), Full (..), Mirror (..))
 import           XMonad.Layout.Grid (Grid (..))
 import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
@@ -33,8 +33,15 @@ import           XMonad.Actions.DwmPromote (dwmpromote)
 import qualified XMonad.Hooks.EwmhDesktops as EWMH
 import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
 import qualified XMonad.Hooks.ManageDocks as Docks
+import           XMonad.Layout.CenteredMaster (CenteredMaster, centerMaster)
+import           XMonad.Layout.Decoration (Decoration, DefaultShrinker, shrinkText)
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
 import           XMonad.Layout.Reflect (Reflect, reflectHoriz)
+import           XMonad.Layout.Renamed (Rename (..), renamed)
+import           XMonad.Layout.Simplest (Simplest)
+import           XMonad.Layout.Tabbed (TabbedDecoration, tabbedAlways)
+import qualified XMonad.Layout.Tabbed as Tabbed
+import           XMonad.Layout.ThreeColumns (ThreeCol (..))
 import           XMonad.Util.CustomKeys (customKeys)
 import qualified XMonad.Util.EZConfig as EZ
 import qualified XMonad.Util.NamedScratchpad as SP
@@ -86,16 +93,64 @@ xCmd cmd =
 type (|||) = Choose
 infixr 5 |||
 
-type Layouts = Tall ||| ModifiedLayout Reflect Tall ||| Grid ||| Full
 
 
-xLayoutHook :: Layouts a
+type Layouts =
+      Split
+  ||| TileLeft
+  ||| TileRight
+  ||| Lane
+  ||| Tile
+  ||| Pile
+  ||| Tabbed
+  ||| Full
+
+type Renamed l =
+  ModifiedLayout Rename l
+
+type Split =
+  Renamed (Mirror Tall)
+
+type TileLeft =
+  Renamed Tall
+
+type TileRight =
+  Renamed (ModifiedLayout Reflect TileLeft)
+
+type Lane =
+  Renamed ThreeCol
+
+type Tile =
+  Renamed Grid
+
+type Pile =
+  Renamed (ModifiedLayout CenteredMaster Grid)
+
+type Tabbed =
+  Renamed (ModifiedLayout (Decoration TabbedDecoration DefaultShrinker) Simplest)
+
+
+xLayoutHook :: Layouts Window
 xLayoutHook =
   let
-    tile = Tall 1 (3 % 100) (2 % 3)
-    refl = reflectHoriz tile
+    rename x = renamed [Replace x]
+
+    splt = rename "Split" $ Mirror (Tall 2 (2 % 100) (4 % 5))
+    sptl = rename "Left" $ Tall 1 (2 % 100) (7 % 10)
+    sptr = rename "Right" $ reflectHoriz sptl
+    lane = rename "Middle" $ ThreeColMid 1 (3 % 100) (1 % 2)
+    tile = rename "Tile" Grid
+    tabs = rename "Tabs" $ tabbedAlways shrinkText tabsTheme
+    magn = rename "Stack" $ centerMaster Grid
+    full = Full
   in
-    tile ||| refl ||| Grid ||| Full
+    splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
+
+tabsTheme :: Tabbed.Theme
+tabsTheme =
+  X.def {
+      Tabbed.fontName = "xft:Source Sans Pro:pixelsize=22"
+    }
 
 -- -----------------------------------------------------------------------------
 -- ManageHook
