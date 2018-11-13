@@ -138,10 +138,10 @@ xLayoutHook =
     splt = rename "Split" $ Mirror (Tall 2 (2 % 100) (4 % 5))
     sptl = rename "Left" $ Tall 1 (2 % 100) (7 % 10)
     sptr = rename "Right" $ reflectHoriz sptl
-    lane = rename "Lane" $ ThreeColMid 1 (3 % 100) (1 % 2)
+    lane = rename "Middle" $ ThreeColMid 1 (3 % 100) (1 % 2)
     tile = rename "Tile" Grid
     tabs = rename "Tabs" $ tabbedAlways shrinkText tabsTheme
-    magn = rename "Pile" $ centerMaster Grid
+    magn = rename "Stack" $ centerMaster Grid
     full = Full
   in
     splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
