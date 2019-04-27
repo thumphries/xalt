@@ -29,6 +29,7 @@ import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
 
+import           XMonad.Actions.CopyWindow (copyToAll, killAllOtherCopies)
 import           XMonad.Actions.DwmPromote (dwmpromote)
 import qualified XMonad.Hooks.EwmhDesktops as EWMH
 import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
@@ -71,6 +72,8 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
           ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
+        , ((mm, xK_a), X.windows copyToAll)
+        , ((mm X..|. shiftMask, xK_a), killAllOtherCopies)
         ]) c
     ezkeys =
       EZ.mkKeymap c (fmap (bimap T.unpack xCmd) (M.toList (C.unKeyMap keymap)))
