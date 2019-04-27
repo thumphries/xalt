@@ -5,9 +5,10 @@
 module XAlternative where
 
 
-import           Control.Monad (liftM2)
+import           Control.Monad (join, liftM2, when)
 
 import           Data.Bifunctor (bimap)
+import           Data.Foldable (traverse_, toList)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid (All, (<>))
@@ -65,6 +66,7 @@ xConfig cfg@(C.Config (C.General term bWidth nBorder fBorder) _keymap _rules) =
     , focusedBorderColor = T.unpack fBorder
     , keys = xKeys cfg
     , mouseBindings = xMouseBindings
+    , startupHook = startupHook X.def >> addEWMHFullscreen
     , layoutHook = xLayoutHook
     , handleEventHook = xEventHook
     , manageHook = xManageHook cfg
@@ -333,3 +335,27 @@ setStrutsKey =
 
 toggleStrutsKey :: XConfig t -> (KeyMask, KeySym)
 toggleStrutsKey XConfig{modMask = modm} = (modm, xK_b )
+
+-- ---------------------------------------------------------------------------
+-- Fix fullscreen
+
+
+-- | Advertise fullscreen support.
+--
+-- https://github.com/xmonad/xmonad-contrib/pull/109@
+addEWMHFullscreen :: X ()
+addEWMHFullscreen   = do
+  wms <- X.getAtom "_NET_WM_STATE"
+  wfs <- X.getAtom "_NET_WM_STATE_FULLSCREEN"
+  traverse_ addNETSupported [wms, wfs]
+
+addNETSupported :: Atom -> X ()
+addNETSupported x =
+  X.withDisplay $ \dpy -> do
+    r <- X.asks X.theRoot
+    a_NET_SUPPORTED <- X.getAtom "_NET_SUPPORTED"
+    a <- X.getAtom "ATOM"
+    X.liftIO $ do
+      sup <- (join . toList) <$> X.getWindowProperty32 dpy a_NET_SUPPORTED r
+      when (fromIntegral x `notElem` sup) $
+        X.changeProperty32 dpy r a_NET_SUPPORTED a X.propModeAppend [fromIntegral x]
