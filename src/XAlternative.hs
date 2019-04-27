@@ -29,6 +29,7 @@ import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
 
+import           XMonad.Actions.CopyWindow (copyToAll, killAllOtherCopies)
 import           XMonad.Actions.DwmPromote (dwmpromote)
 import qualified XMonad.Hooks.EwmhDesktops as EWMH
 import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
@@ -86,6 +87,10 @@ xCmd cmd =
       X.restart "xalt" True
     C.Promote ->
       dwmpromote
+    C.Pin ->
+      X.windows copyToAll
+    C.Unpin ->
+      killAllOtherCopies
 
 -- -----------------------------------------------------------------------------
 -- LayoutHook
