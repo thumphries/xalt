@@ -31,6 +31,7 @@ import           XMonad.StackSet (RationalRect (..))
 
 import           XMonad.Actions.CopyWindow (copyToAll, killAllOtherCopies)
 import           XMonad.Actions.DwmPromote (dwmpromote)
+import qualified XMonad.Actions.FloatSnap as Snap
 import qualified XMonad.Hooks.EwmhDesktops as EWMH
 import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
 import qualified XMonad.Hooks.ManageDocks as Docks
@@ -61,6 +62,7 @@ xConfig cfg@(C.Config (C.General term bWidth nBorder fBorder) _keymap _rules) =
     , normalBorderColor = T.unpack nBorder
     , focusedBorderColor = T.unpack fBorder
     , keys = xKeys cfg
+    , mouseBindings = xMouseBindings
     , layoutHook = xLayoutHook
     , manageHook = xManageHook cfg
     , workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
@@ -73,10 +75,55 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
           ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
         ]) c
+
     ezkeys =
       EZ.mkKeymap c (fmap (bimap T.unpack xCmd) (M.toList (C.unKeyMap keymap)))
   in
     ezkeys <> ckeys
+
+xMouseBindings :: XConfig Layout -> Map (ButtonMask, Button) (Window -> X ())
+xMouseBindings cfg =
+  let
+    snapDistance =
+      Just 100
+
+    fillDistance =
+      Just 250
+
+    mouseMove w = do
+      X.focus w
+      X.mouseMoveWindow w
+      Snap.afterDrag $
+        Snap.snapMagicMove snapDistance snapDistance w
+
+    mouseMoveExpand w = do
+      X.focus w
+      X.mouseMoveWindow w
+      Snap.afterDrag $
+        Snap.snapMagicResize
+          [Snap.L, Snap.R, Snap.U, Snap.D]
+          fillDistance
+          fillDistance
+          w
+
+    resizeSnap w = do
+      X.focus w
+      X.mouseResizeWindow w
+      Snap.afterDrag $
+        Snap.snapMagicResize
+          [Snap.R, Snap.D]
+          snapDistance
+          snapDistance
+          w
+
+    custom (XConfig {modMask = mm}) =
+      M.fromList [
+          ((mm, button1), mouseMove)
+        , ((mm X..|. shiftMask, button1), mouseMoveExpand)
+        , ((mm, button3), resizeSnap)
+        ]
+  in
+    custom cfg <> mouseBindings X.def cfg
 
 xCmd :: C.Command -> X ()
 xCmd cmd =
