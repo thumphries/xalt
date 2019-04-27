@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TypeOperators #-}
@@ -9,7 +10,7 @@ import           Control.Monad (liftM2)
 import           Data.Bifunctor (bimap)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import           Data.Monoid ((<>))
+import           Data.Monoid (All, (<>))
 import           Data.Ratio ((%))
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -37,7 +38,8 @@ import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
 import qualified XMonad.Hooks.ManageDocks as Docks
 import           XMonad.Layout.CenteredMaster (CenteredMaster, centerMaster)
 import           XMonad.Layout.Decoration (Decoration, DefaultShrinker, shrinkText)
-import           XMonad.Layout.LayoutModifier (ModifiedLayout)
+import           XMonad.Layout.Fullscreen (FullscreenFull, FullscreenFloat, fullscreenEventHook, fullscreenManageHook, fullscreenFull, fullscreenFloat)
+import           XMonad.Layout.LayoutModifier (LayoutModifier, ModifiedLayout)
 import           XMonad.Layout.Reflect (Reflect, reflectHoriz)
 import           XMonad.Layout.Renamed (Rename (..), renamed)
 import           XMonad.Layout.Simplest (Simplest)
@@ -64,6 +66,7 @@ xConfig cfg@(C.Config (C.General term bWidth nBorder fBorder) _keymap _rules) =
     , keys = xKeys cfg
     , mouseBindings = xMouseBindings
     , layoutHook = xLayoutHook
+    , handleEventHook = xEventHook
     , manageHook = xManageHook cfg
     , workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     }
@@ -165,46 +168,74 @@ type Layouts =
   ||| Tile
   ||| Pile
   ||| Tabbed
-  ||| Full
+  ||| Fullscreen
 
 type Renamed l =
   ModifiedLayout Rename l
 
+type AllowFull l =
+  ModifiedLayout FullscreenFull (ModifiedLayout FullscreenFloat l)
+
 type Split =
-  Renamed (Mirror Tall)
+  Renamed (AllowFull (Mirror Tall))
 
 type TileLeft =
-  Renamed Tall
+  Renamed (AllowFull Tall)
 
 type TileRight =
   Renamed (ModifiedLayout Reflect TileLeft)
 
 type Lane =
-  Renamed ThreeCol
+  Renamed (AllowFull ThreeCol)
 
 type Tile =
-  Renamed Grid
+  Renamed (AllowFull Grid)
 
 type Pile =
-  Renamed (ModifiedLayout CenteredMaster Grid)
+  Renamed (AllowFull (ModifiedLayout CenteredMaster Grid))
 
 type Tabbed =
-  Renamed (ModifiedLayout (Decoration TabbedDecoration DefaultShrinker) Simplest)
+  Renamed (AllowFull (ModifiedLayout (Decoration TabbedDecoration DefaultShrinker) Simplest))
 
+type Fullscreen =
+  Renamed (AllowFull Full)
+
+allowFull ::
+     LayoutModifier FullscreenFloat a
+  => X.LayoutClass l a
+  => l a
+  -> AllowFull l a
+allowFull l = fullscreenFull (fullscreenFloat l)
 
 xLayoutHook :: Layouts Window
 xLayoutHook =
   let
     rename x = renamed [Replace x]
 
-    splt = rename "Split" $ Mirror (Tall 2 (2 % 100) (4 % 5))
-    sptl = rename "Left" $ Tall 1 (2 % 100) (7 % 10)
-    sptr = rename "Right" $ reflectHoriz sptl
-    lane = rename "Middle" $ ThreeColMid 1 (3 % 100) (1 % 2)
-    tile = rename "Tile" Grid
-    tabs = rename "Tabs" $ tabbedAlways shrinkText tabsTheme
-    magn = rename "Stack" $ centerMaster Grid
-    full = Full
+    splt =
+      rename "Split" . allowFull $
+        Mirror (Tall 2 (2 % 100) (4 % 5))
+    sptl =
+      rename "Left" . allowFull $
+        Tall 1 (2 % 100) (7 % 10)
+    sptr =
+      rename "Right" $
+        reflectHoriz sptl
+    lane =
+      rename "Middle" . allowFull $
+        ThreeColMid 1 (3 % 100) (1 % 2)
+    tile =
+      rename "Tile" . allowFull $
+        Grid
+    tabs =
+      rename "Tabs" . allowFull $
+        tabbedAlways shrinkText tabsTheme
+    magn =
+      rename "Stack" . allowFull $
+        centerMaster Grid
+    full =
+      rename "Full" . allowFull $
+        Full
   in
     splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
 
@@ -214,6 +245,10 @@ tabsTheme =
       Tabbed.fontName = "xft:Source Sans Pro:pixelsize=22"
     }
 
+xEventHook :: X.Event -> X All
+xEventHook =
+  fullscreenEventHook
+
 -- -----------------------------------------------------------------------------
 -- ManageHook
 
@@ -222,6 +257,7 @@ xManageHook (C.Config (C.General term _bWidth _bNorm _bFoc) _keymap rules) =
   MH.composeAll [
       rulesHook rules
     , SP.namedScratchpadManageHook (scratchpads term)
+    , fullscreenManageHook
     ]
 
 rulesHook :: C.Rules -> X.ManageHook
