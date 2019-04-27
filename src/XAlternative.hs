@@ -71,9 +71,19 @@ xConfig cfg@(C.Config (C.General term bWidth nBorder fBorder) _keymap _rules) =
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
 xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
   let
+    move d =
+      X.withFocused (Snap.snapMove d Nothing)
+
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
           ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
+
+        -- TODO fold into Command
+        , ((mm, xK_s), X.withFocused (Snap.snapMagicResize [Snap.L, Snap.R, Snap.U, Snap.D] Nothing Nothing))
+        , ((mm, xK_Left), move Snap.L)
+        , ((mm, xK_Right), move Snap.R)
+        , ((mm, xK_Up), move Snap.U)
+        , ((mm, xK_Down), move Snap.D)
         ]) c
 
     ezkeys =
