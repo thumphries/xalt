@@ -42,6 +42,8 @@ data Command =
     Spawn Text
   | Restart
   | Promote
+  | Pin
+  | Unpin
   deriving (Eq, Ord, Show)
 
 newtype Rules = Rules {
@@ -92,6 +94,8 @@ validateCommand v =
        (Spawn <$> section "spawn" v text)
   <||> (Restart <$ atomConst "restart" v)
   <||> (Promote <$ atomConst "promote" v)
+  <||> (Pin <$ atomConst "pin" v)
+  <||> (Unpin <$ atomConst "unpin" v)
 
 validateRules :: Value -> Validation Rules
 validateRules v =

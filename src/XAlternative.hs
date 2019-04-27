@@ -72,8 +72,6 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
           ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
-        , ((mm, xK_a), X.windows copyToAll)
-        , ((mm X..|. shiftMask, xK_a), killAllOtherCopies)
         ]) c
     ezkeys =
       EZ.mkKeymap c (fmap (bimap T.unpack xCmd) (M.toList (C.unKeyMap keymap)))
@@ -89,6 +87,10 @@ xCmd cmd =
       X.restart "xalt" True
     C.Promote ->
       dwmpromote
+    C.Pin ->
+      X.windows copyToAll
+    C.Unpin ->
+      killAllOtherCopies
 
 -- -----------------------------------------------------------------------------
 -- LayoutHook
