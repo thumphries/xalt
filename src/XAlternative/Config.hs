@@ -44,6 +44,7 @@ data Command =
   | Promote
   | Pin
   | Unpin
+  | Magnify
   | Fullscreen
   | Float
   | Sink
@@ -99,6 +100,7 @@ validateCommand v =
   <||> (Promote <$ atomConst "promote" v)
   <||> (Pin <$ atomConst "pin" v)
   <||> (Unpin <$ atomConst "unpin" v)
+  <||> (Magnify <$ atomConst "magnify" v)
   <||> (Fullscreen <$ atomConst "fullscreen" v)
   <||> (Float <$ atomConst "float" v)
   <||> (Sink <$ atomConst "sink" v)

@@ -149,6 +149,10 @@ xCmd cmd =
       X.windows copyToAll
     C.Unpin ->
       killAllOtherCopies
+    C.Magnify ->
+      X.withFocused $ \w -> do
+        X.windows $
+          W.float w (RationalRect 0.1 0.1 0.8 0.8)
     C.Fullscreen ->
       X.withFocused $ \w -> do
         X.windows $
