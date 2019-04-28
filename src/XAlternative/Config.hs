@@ -44,6 +44,8 @@ data Command =
   | Promote
   | Pin
   | Unpin
+  | Fullscreen
+  | Sink
   deriving (Eq, Ord, Show)
 
 newtype Rules = Rules {
@@ -96,6 +98,8 @@ validateCommand v =
   <||> (Promote <$ atomConst "promote" v)
   <||> (Pin <$ atomConst "pin" v)
   <||> (Unpin <$ atomConst "unpin" v)
+  <||> (Fullscreen <$ atomConst "fullscreen" v)
+  <||> (Sink <$ atomConst "sink" v)
 
 validateRules :: Value -> Validation Rules
 validateRules v =
