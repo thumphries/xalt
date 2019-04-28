@@ -28,6 +28,7 @@ import           XMonad.Layout.Grid (Grid (..))
 import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
+import qualified XMonad.StackSet as W
 
 import           XMonad.Actions.CopyWindow (copyToAll, killAllOtherCopies)
 import           XMonad.Actions.DwmPromote (dwmpromote)
@@ -74,6 +75,11 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
     move d =
       X.withFocused (Snap.snapMove d Nothing)
 
+    fullFloat =
+      X.withFocused $ \w -> do
+        X.windows $
+          W.float w (RationalRect 0 0 1 1)
+
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
           ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
@@ -84,6 +90,8 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
         , ((mm, xK_Right), move Snap.R)
         , ((mm, xK_Up), move Snap.U)
         , ((mm, xK_Down), move Snap.D)
+
+        , ((mm, xK_g), fullFloat)
         ]) c
 
     ezkeys =
@@ -154,8 +162,6 @@ xCmd cmd =
 
 type (|||) = Choose
 infixr 5 |||
-
-
 
 type Layouts =
       Split
