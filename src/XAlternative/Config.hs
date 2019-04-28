@@ -45,6 +45,7 @@ data Command =
   | Pin
   | Unpin
   | Fullscreen
+  | Float
   | Sink
   deriving (Eq, Ord, Show)
 
@@ -99,6 +100,7 @@ validateCommand v =
   <||> (Pin <$ atomConst "pin" v)
   <||> (Unpin <$ atomConst "unpin" v)
   <||> (Fullscreen <$ atomConst "fullscreen" v)
+  <||> (Float <$ atomConst "float" v)
   <||> (Sink <$ atomConst "sink" v)
 
 validateRules :: Value -> Validation Rules

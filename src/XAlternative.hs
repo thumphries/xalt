@@ -153,6 +153,9 @@ xCmd cmd =
       X.withFocused $ \w -> do
         X.windows $
           W.float w (RationalRect 0 0 1 1)
+    C.Float ->
+      X.withFocused $ \w ->
+        X.float w
     C.Sink ->
       X.withFocused $ \w ->
         X.windows $
