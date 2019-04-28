@@ -77,6 +77,10 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
     move d =
       X.withFocused (Snap.snapMove d Nothing)
 
+    full = do
+      X.sendMessage (Toggle FULL)
+      X.sendMessage ToggleStruts
+
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
           ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
@@ -88,7 +92,7 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
         , ((mm, xK_Up), move Snap.U)
         , ((mm, xK_Down), move Snap.D)
 
-        , ((mm, xK_g), X.sendMessage (Toggle FULL))
+        , ((mm, xK_g), X.sendMessage (Toggle NBFULL))
         , ((mm, xK_r), X.sendMessage (Toggle MIRROR))
         ]) c
 
@@ -218,7 +222,7 @@ xLayoutHook =
     magn = rename "Stack" $ centerMaster Grid
     full = Full
   in
-    mkToggle (FULL ?? MIRROR ?? Toggle.EOT) $
+    mkToggle (NBFULL ?? MIRROR ?? Toggle.EOT) $
       splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
 
 tabsTheme :: Tabbed.Theme
