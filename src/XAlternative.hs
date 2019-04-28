@@ -39,6 +39,7 @@ import qualified XMonad.Hooks.ManageDocks as Docks
 import           XMonad.Layout.CenteredMaster (CenteredMaster, centerMaster)
 import           XMonad.Layout.Decoration (Decoration, DefaultShrinker, shrinkText)
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
+import           XMonad.Layout.NoBorders (Ambiguity (..), ConfigurableBorder, lessBorders)
 import           XMonad.Layout.Reflect (Reflect, reflectHoriz)
 import           XMonad.Layout.Renamed (Rename (..), renamed)
 import           XMonad.Layout.Simplest (Simplest)
@@ -172,6 +173,9 @@ type (|||) = Choose
 infixr 5 |||
 
 type Layouts =
+  ModifiedLayout (ConfigurableBorder Ambiguity) Layouts'
+
+type Layouts' =
       Split
   ||| TileLeft
   ||| TileRight
@@ -220,7 +224,8 @@ xLayoutHook =
     magn = rename "Stack" $ centerMaster Grid
     full = Full
   in
-    splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
+    lessBorders OnlyScreenFloat $
+      splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
 
 tabsTheme :: Tabbed.Theme
 tabsTheme =
