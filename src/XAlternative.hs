@@ -38,7 +38,7 @@ import qualified XMonad.Hooks.ManageDocks as Docks
 import           XMonad.Layout.CenteredMaster (CenteredMaster, centerMaster)
 import           XMonad.Layout.Decoration (Decoration, DefaultShrinker, shrinkText)
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
-import           XMonad.Layout.MultiToggle (Toggle (..), mkToggle, single)
+import           XMonad.Layout.MultiToggle (Toggle (..), (??), mkToggle)
 import qualified XMonad.Layout.MultiToggle as Toggle
 import           XMonad.Layout.MultiToggle.Instances (StdTransformers (..))
 import           XMonad.Layout.Reflect (Reflect, reflectHoriz)
@@ -89,6 +89,7 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
         , ((mm, xK_Down), move Snap.D)
 
         , ((mm, xK_g), X.sendMessage (Toggle FULL))
+        , ((mm, xK_r), X.sendMessage (Toggle MIRROR))
         ]) c
 
     ezkeys =
@@ -160,8 +161,13 @@ xCmd cmd =
 type (|||) = Choose
 infixr 5 |||
 
+type (???) = Toggle.HCons
+infixr 5 ???
+
 type Layouts =
-  Toggle.MultiToggle (Toggle.HCons StdTransformers Toggle.EOT) Layouts'
+  Toggle.MultiToggle
+    (StdTransformers ??? StdTransformers ??? Toggle.EOT)
+    Layouts'
 
 type Layouts' =
       Split
@@ -212,7 +218,7 @@ xLayoutHook =
     magn = rename "Stack" $ centerMaster Grid
     full = Full
   in
-    mkToggle (single FULL) $
+    mkToggle (FULL ?? MIRROR ?? Toggle.EOT) $
       splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
 
 tabsTheme :: Tabbed.Theme
