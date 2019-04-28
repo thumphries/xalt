@@ -28,6 +28,7 @@ import           XMonad.Layout.Grid (Grid (..))
 import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
 import           XMonad.StackSet (RationalRect (..))
+import qualified XMonad.StackSet as W
 
 import           XMonad.Actions.CopyWindow (copyToAll, killAllOtherCopies)
 import           XMonad.Actions.DwmPromote (dwmpromote)
@@ -38,6 +39,7 @@ import qualified XMonad.Hooks.ManageDocks as Docks
 import           XMonad.Layout.CenteredMaster (CenteredMaster, centerMaster)
 import           XMonad.Layout.Decoration (Decoration, DefaultShrinker, shrinkText)
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
+import           XMonad.Layout.NoBorders (Ambiguity (..), ConfigurableBorder, lessBorders)
 import           XMonad.Layout.Reflect (Reflect, reflectHoriz)
 import           XMonad.Layout.Renamed (Rename (..), renamed)
 import           XMonad.Layout.Simplest (Simplest)
@@ -148,6 +150,21 @@ xCmd cmd =
       X.windows copyToAll
     C.Unpin ->
       killAllOtherCopies
+    C.Magnify ->
+      X.withFocused $ \w -> do
+        X.windows $
+          W.float w (RationalRect 0.1 0.1 0.8 0.8)
+    C.Fullscreen ->
+      X.withFocused $ \w -> do
+        X.windows $
+          W.float w (RationalRect 0 0 1 1)
+    C.Float ->
+      X.withFocused $ \w ->
+        X.float w
+    C.Sink ->
+      X.withFocused $ \w ->
+        X.windows $
+          W.sink w
 
 -- -----------------------------------------------------------------------------
 -- LayoutHook
@@ -155,9 +172,10 @@ xCmd cmd =
 type (|||) = Choose
 infixr 5 |||
 
-
-
 type Layouts =
+  ModifiedLayout (ConfigurableBorder Ambiguity) Layouts'
+
+type Layouts' =
       Split
   ||| TileLeft
   ||| TileRight
@@ -206,7 +224,8 @@ xLayoutHook =
     magn = rename "Stack" $ centerMaster Grid
     full = Full
   in
-    splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
+    lessBorders OnlyScreenFloat $
+      splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
 
 tabsTheme :: Tabbed.Theme
 tabsTheme =
