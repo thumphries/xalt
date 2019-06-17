@@ -36,6 +36,8 @@ import qualified XMonad.Actions.FloatSnap as Snap
 import qualified XMonad.Hooks.EwmhDesktops as EWMH
 import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
 import qualified XMonad.Hooks.ManageDocks as Docks
+import           XMonad.Layout.BinarySpacePartition (BinarySpacePartition)
+import qualified XMonad.Layout.BinarySpacePartition as BSP
 import           XMonad.Layout.CenteredMaster (CenteredMaster, centerMaster)
 import           XMonad.Layout.Decoration (Decoration, DefaultShrinker, shrinkText)
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
@@ -87,6 +89,10 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
         , ((mm, xK_Right), move Snap.R)
         , ((mm, xK_Up), move Snap.U)
         , ((mm, xK_Down), move Snap.D)
+
+        -- TODO unsure if BSP goes into Command
+        , ((mm, xK_r), X.sendMessage BSP.Rotate)
+        , ((mm, xK_t), X.sendMessage BSP.Swap)
         ]) c
 
     ezkeys =
@@ -177,7 +183,8 @@ type Layouts =
   ModifiedLayout (ConfigurableBorder Ambiguity) Layouts'
 
 type Layouts' =
-      Split
+      BSP
+  ||| Split
   ||| TileLeft
   ||| TileRight
   ||| Lane
@@ -191,6 +198,9 @@ type Renamed =
 
 type Gaps =
   ModifiedLayout Spacing
+
+type BSP =
+  Renamed (Gaps BinarySpacePartition)
 
 type Split =
   Renamed (Gaps (Mirror Tall))
@@ -222,6 +232,7 @@ xLayoutHook =
     windowBorder = Border 10 10 10 10
     gaps = spacingRaw False screenBorder True windowBorder True
 
+    bsp  = rename "BSP" . gaps $ BSP.emptyBSP
     splt = rename "Split" . gaps $ Mirror (Tall 2 (2 % 100) (4 % 5))
     sptl = rename "Left" . gaps $ Tall 1 (2 % 100) (7 % 10)
     sptr = rename "Right" . gaps $ reflectHoriz sptl
@@ -232,7 +243,7 @@ xLayoutHook =
     full = Full
   in
     lessBorders OnlyScreenFloat $
-      splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
+      bsp ||| splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
 
 tabsTheme :: Tabbed.Theme
 tabsTheme =
