@@ -43,6 +43,7 @@ import           XMonad.Layout.NoBorders (Ambiguity (..), ConfigurableBorder, le
 import           XMonad.Layout.Reflect (Reflect, reflectHoriz)
 import           XMonad.Layout.Renamed (Rename (..), renamed)
 import           XMonad.Layout.Simplest (Simplest)
+import           XMonad.Layout.Spacing (Spacing, Border (..), spacingRaw)
 import           XMonad.Layout.Tabbed (TabbedDecoration, tabbedAlways)
 import qualified XMonad.Layout.Tabbed as Tabbed
 import           XMonad.Layout.ThreeColumns (ThreeCol (..))
@@ -185,43 +186,49 @@ type Layouts' =
   ||| Tabbed
   ||| Full
 
-type Renamed l =
-  ModifiedLayout Rename l
+type Renamed =
+  ModifiedLayout Rename
+
+type Gaps =
+  ModifiedLayout Spacing
 
 type Split =
-  Renamed (Mirror Tall)
+  Renamed (Gaps (Mirror Tall))
 
 type TileLeft =
-  Renamed Tall
+  Renamed (Gaps Tall)
 
 type TileRight =
-  Renamed (ModifiedLayout Reflect TileLeft)
+  Renamed (Gaps (ModifiedLayout Reflect TileLeft))
 
 type Lane =
-  Renamed ThreeCol
+  Renamed (Gaps ThreeCol)
 
 type Tile =
-  Renamed Grid
+  Renamed (Gaps Grid)
 
 type Pile =
-  Renamed (ModifiedLayout CenteredMaster Grid)
+  Renamed (Gaps (ModifiedLayout CenteredMaster Grid))
 
 type Tabbed =
-  Renamed (ModifiedLayout (Decoration TabbedDecoration DefaultShrinker) Simplest)
+  Renamed (Gaps (ModifiedLayout (Decoration TabbedDecoration DefaultShrinker) Simplest))
 
 
 xLayoutHook :: Layouts Window
 xLayoutHook =
   let
     rename x = renamed [Replace x]
+    screenBorder = Border 10 10 10 10
+    windowBorder = Border 10 10 10 10
+    gaps = spacingRaw False screenBorder True windowBorder True
 
-    splt = rename "Split" $ Mirror (Tall 2 (2 % 100) (4 % 5))
-    sptl = rename "Left" $ Tall 1 (2 % 100) (7 % 10)
-    sptr = rename "Right" $ reflectHoriz sptl
-    lane = rename "Middle" $ ThreeColMid 1 (3 % 100) (1 % 2)
-    tile = rename "Tile" Grid
-    tabs = rename "Tabs" $ tabbedAlways shrinkText tabsTheme
-    magn = rename "Stack" $ centerMaster Grid
+    splt = rename "Split" . gaps $ Mirror (Tall 2 (2 % 100) (4 % 5))
+    sptl = rename "Left" . gaps $ Tall 1 (2 % 100) (7 % 10)
+    sptr = rename "Right" . gaps $ reflectHoriz sptl
+    lane = rename "Middle" . gaps $ ThreeColMid 1 (3 % 100) (1 % 2)
+    tile = rename "Tile" . gaps $ Grid
+    tabs = rename "Tabs" . gaps $ tabbedAlways shrinkText tabsTheme
+    magn = rename "Stack" . gaps $ centerMaster Grid
     full = Full
   in
     lessBorders OnlyScreenFloat $
