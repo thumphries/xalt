@@ -35,6 +35,24 @@ executable xbar
                      , text
                      , transformers
 
+executable xfoc
+  default-language:    Haskell2010
+  ghc-options:         -Wall -Werror -O2 -threaded -rtsopts
+  hs-source-dirs:      main
+  main-is:             xfoc.hs
+  build-depends:
+                       base
+                     , async
+                     , chronos
+                     , clock
+                     , gi-gtk
+                     , gi-gtk-hs
+                     , gtk3
+                     , mtl
+                     , text
+                     , transformers
+
+
 library
   default-language:    Haskell2010
   ghc-options:         -Wall -Werror
