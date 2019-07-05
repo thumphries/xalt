@@ -9,9 +9,9 @@ import qualified Chronos
 import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (Async)
 import qualified Control.Concurrent.Async as A
-import           Control.Monad (forever)
 
 import           Data.Text (Text)
+import qualified Data.Text.IO as T
 
 import qualified System.Clock as Clock
 
@@ -25,14 +25,23 @@ main = do
         , taskDuration = Chronos.minute
         }
 
-  poll <-
-    A.async . forever $ do
+  let
+    poll = do
       delayTimespan Chronos.second
       status <- runningTaskPoll rt
-      print status
+      case status of
+        StatusComplete ->
+          pure ResultComplete
+        StatusRunning elapsed -> do
+          T.putStrLn $
+               unTaskName (taskName (runningTask rt))
+            <> ": "
+            <> renderTimespan
+                 (taskDuration (runningTask rt) `timespanDifference` elapsed)
+          poll
 
-  result <- A.wait (runningTaskThread rt)
-  A.cancel poll
+  poller <- A.async poll
+  (_, result) <- A.waitAnyCancel [runningTaskThread rt, poller]
   print result
 
 
@@ -111,3 +120,7 @@ timespanDifference :: Timespan -> Timespan -> Timespan
 timespanDifference t0 t1 =
   Timespan $
     getTimespan t0 - getTimespan t1
+
+renderTimespan :: Timespan -> Text
+renderTimespan =
+  Chronos.encodeTimespan (Chronos.SubsecondPrecisionFixed 0)
