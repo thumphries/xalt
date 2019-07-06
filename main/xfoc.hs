@@ -12,10 +12,15 @@ import qualified Control.Concurrent.Async as A
 import qualified Control.Concurrent.STM as STM
 import           Control.Concurrent.STM.TMVar (TMVar)
 import qualified Control.Concurrent.STM.TMVar as TMVar
+import           Control.Monad (forever, when)
 
+import           Data.Int (Int64)
 import           Data.Maybe (fromJust)
 import           Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
+
+import qualified DBus.Client as DBus
 
 import qualified System.Clock as Clock
 
@@ -23,18 +28,9 @@ import qualified System.Clock as Clock
 main :: IO ()
 main = do
   api <- newAPI
-
-  _ <-
-    apiSubmit api Task {
-        taskName = TaskName "Second Task"
-      , taskDuration = Chronos.minute
-      }
-
-  _ <- A.async $ do
-    threadDelay 3000000
-    apiStop api Abandon
-
-  subscribe api
+  client <- DBus.connectSession
+  dbus client api
+  forever $ threadDelay 3000000
 
 subscribe :: API -> IO ()
 subscribe api = do
@@ -54,6 +50,54 @@ subscribe api = do
           poll
   result <- A.race poll (apiWait api)
   print result
+
+-- ---------------------------------------------------------------------------
+-- DBus
+
+dbus :: DBus.Client -> API -> IO ()
+dbus client api = do
+  -- Request a unique name on the bus.
+  requestResult <- DBus.requestName client "me.utf8.xfoc" []
+  when (requestResult /= DBus.NamePrimaryOwner) $
+    fail "Another service owns the \"com.example.exporting\" bus name"
+
+  DBus.export client "/xfoc"
+    DBus.defaultInterface {
+        DBus.interfaceName = "me.utf8.xfoc"
+      , DBus.interfaceMethods = [
+            DBus.autoMethod "Submit" (submit'' api)
+          , DBus.autoMethod "Status" (status'' api)
+          ]
+      }
+
+submit'' :: API -> Text -> Int64 -> IO ()
+submit'' api tn tm = do
+  putStrLn $ "submit " ++ show tn ++ show tm
+  _ <- apiSubmit api (Task (TaskName tn) (mins tm))
+  pure ()
+
+status'' :: API -> IO (Text, Text, Text)
+status'' api = do
+  putStrLn $ "status"
+  msr <- apiStatus api
+  let
+    name = maybe "" (unTaskName . taskName . statusTask) msr
+    status = maybe "" (T.pack . show . statusTaskStatus) msr
+    remaining = maybe "" printRemaining msr
+  pure $ (name, status, remaining)
+
+printRemaining :: StatusResponse -> Text
+printRemaining sr =
+  case statusTaskStatus sr of
+    StatusRunning elapsed ->
+      renderTimespan
+        (taskDuration (statusTask sr) `timespanDifference` elapsed)
+    _ ->
+      ""
+
+mins :: Int64 -> Timespan
+mins m =
+  Timespan (getTimespan Chronos.minute * fromIntegral m)
 
 -- ---------------------------------------------------------------------------
 -- Stateful API
@@ -149,11 +193,6 @@ stop' st _reason = do
       STM.atomically $ TMVar.putTMVar st Nothing
     _ ->
       pure ()
-
--- ---------------------------------------------------------------------------
--- Event loop
-
-
 
 -- ---------------------------------------------------------------------------
 -- Task
