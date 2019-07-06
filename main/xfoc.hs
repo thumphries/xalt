@@ -30,6 +30,10 @@ main = do
       , taskDuration = Chronos.minute
       }
 
+  _ <- A.async $ do
+    threadDelay 3000000
+    apiStop api Abandon
+
   subscribe api
 
 subscribe :: API -> IO ()
@@ -59,7 +63,7 @@ data API =
       apiSubmit :: Task -> IO (Maybe SubmitResponse)
     , apiStatus :: IO (Maybe StatusResponse)
     , apiWait :: IO (Maybe TaskResult)
---    , stop :: Reason -> IO ()
+    , apiStop :: StopReason -> IO ()
     }
 
 data SubmitResponse =
@@ -82,6 +86,7 @@ newAPI = do
       apiSubmit = submit' st
     , apiStatus = status' st
     , apiWait = wait' st
+    , apiStop = stop' st
     }
 
 type State = TMVar (Maybe RunningTask)
@@ -125,10 +130,25 @@ wait' :: State -> IO (Maybe TaskResult)
 wait' st = do
   mv <- STM.atomically $ TMVar.tryReadTMVar st
   case mv of
-    Just (Just rt) ->
-      fmap Just (A.wait (runningTaskThread rt))
+    Just (Just rt) -> do
+      e <- A.waitCatch (runningTaskThread rt)
+      case e of
+        Left _e ->
+          pure Nothing
+        Right r ->
+          pure (Just r)
     _ ->
       pure Nothing
+
+stop' :: State -> StopReason -> IO ()
+stop' st _reason = do
+  mv <- STM.atomically $ TMVar.tryTakeTMVar st
+  case mv of
+    Just (Just rt) -> do
+      A.cancel (runningTaskThread rt)
+      STM.atomically $ TMVar.putTMVar st Nothing
+    _ ->
+      pure ()
 
 -- ---------------------------------------------------------------------------
 -- Event loop
@@ -148,6 +168,11 @@ newtype TaskName =
   TaskName {
       unTaskName :: Text
     } deriving (Eq, Ord, Show)
+
+data StopReason =
+    Abandon
+  | ContextSwitch
+  deriving (Eq, Ord, Show)
 
 data TaskStatus =
     StatusRunning Timespan
