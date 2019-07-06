@@ -27,6 +27,7 @@ executable xbar
   main-is:             xbar.hs
   build-depends:
                        base
+                     , dbus
                      , gi-gtk
                      , gi-gtk-hs
                      , gtk3
