@@ -45,10 +45,12 @@ executable xfoc
                      , async
                      , chronos
                      , clock
+                     , dbus
                      , gi-gtk
                      , gi-gtk-hs
                      , gtk3
                      , mtl
+                     , stm
                      , text
                      , transformers
 
