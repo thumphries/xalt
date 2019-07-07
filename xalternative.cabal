@@ -66,8 +66,8 @@ library
                        XFocus
                        XFocus.API
                        XFocus.API.Memory
-                       XFocus.Client
-                       XFocus.Server
+                       XFocus.DBus.Client
+                       XFocus.DBus.Server
                        XFocus.Task
 
   build-depends:
