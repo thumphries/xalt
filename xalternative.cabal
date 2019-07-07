@@ -64,6 +64,8 @@ library
                        XAlternative.Config.Validation
 
                        XFocus
+                       XFocus.API
+                       XFocus.API.Memory
                        XFocus.Client
                        XFocus.Server
                        XFocus.Task

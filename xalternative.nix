@@ -15,7 +15,7 @@ mkDerivation {
     xmonad xmonad-contrib
   ];
   executableHaskellDepends = [
-    async base chronos clock dbus gi-gtk gi-gtk-hs gtk3 mtl
+    async base chronos dbus gi-gtk gi-gtk-hs gtk3 mtl
     optparse-applicative stm taffybar text transformers
   ];
   homepage = "https://github.com/thumphries/xalternative";
