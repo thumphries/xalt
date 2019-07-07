@@ -35,6 +35,7 @@ executable xbar
                      , taffybar
                      , text
                      , transformers
+                     , xalternative
 
 executable xfoc
   default-language:    Haskell2010

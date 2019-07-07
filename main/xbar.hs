@@ -9,13 +9,10 @@ import           Control.Monad.IO.Class (liftIO)
 
 import           Data.GI.Gtk.Threading (postGUIASync)
 import           Data.Int (Int64)
-import qualified Data.List as L
-import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-import qualified DBus as DBus
 import qualified DBus.Client as DBus
 
 import           GI.Gtk (Widget)
@@ -34,8 +31,8 @@ import qualified System.Taffybar.Widget.Workspaces as TW
 
 import           Text.Printf (printf)
 
+import qualified XFocus.DBus.Client as XFocus
 
-import qualified Debug.Trace
 
 main :: IO ()
 main = do
@@ -94,34 +91,8 @@ music =
 xfoc :: TaffyIO Widget
 xfoc = do
   client <- liftIO DBus.connectSession
-  let
-    k = getXfocStatus client
   liftIO $
-    PL.pollingLabelNew "" 1.0 k
-
-getXfocStatus :: DBus.Client -> IO Text
-getXfocStatus client = do
-  e <-
-    DBus.call client ((DBus.methodCall "/xfoc" "me.utf8.xfoc" "Status") {
-        DBus.methodCallDestination = Just "me.utf8.xfoc"
-      })
-  Debug.Trace.traceM (show e)
-  pure $ case e of
-    Left _err ->
-      ""
-    Right rsp ->
-      fromMaybe "" $ do
-        params <-
-          traverse DBus.fromVariant (L.take 3 (DBus.methodReturnBody rsp)) :: Maybe [Text]
-        pure $ case params of
-          [name, status, remaining] ->
-            case status of
-              "StatusComplete" ->
-                ""
-              _ ->
-                name <> ": " <> remaining
-          _ ->
-            ""
+    PL.pollingLabelNew "" 1.0 (XFocus.status client)
 
 -- -----------------------------------------------------------------------------
 
