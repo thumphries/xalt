@@ -45,15 +45,12 @@ executable xfoc
                        base
                      , async
                      , chronos
-                     , clock
                      , dbus
-                     , gi-gtk
-                     , gi-gtk-hs
-                     , gtk3
                      , mtl
                      , stm
                      , text
                      , transformers
+                     , xalternative
 
 
 library
@@ -66,12 +63,25 @@ library
                        XAlternative.Config
                        XAlternative.Config.Validation
 
+                       XFocus
+                       XFocus.Client
+                       XFocus.Server
+                       XFocus.Task
+
   build-depends:
                        base
+                     , async
+                     , chronos
+                     , clock
                      , config-value
                      , containers
+                     , dbus
                      , directory
+                     , gi-gtk
+                     , gi-gtk-hs
+                     , gtk3
                      , microlens
+                     , stm
                      , taffybar
                      , text
                      , transformers

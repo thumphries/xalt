@@ -10,8 +10,9 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    base config-value containers directory microlens taffybar text
-    transformers X11 xmonad xmonad-contrib
+    async base chronos clock config-value containers dbus directory
+    gi-gtk gi-gtk-hs gtk3 microlens stm taffybar text transformers X11
+    xmonad xmonad-contrib
   ];
   executableHaskellDepends = [
     async base chronos clock dbus gi-gtk gi-gtk-hs gtk3 mtl
