@@ -1,7 +1,7 @@
-{ mkDerivation, async, base, chronos, clock, config-value
-, containers, dbus, directory, gi-gtk, gi-gtk-hs, gtk3, microlens
-, mtl, optparse-applicative, serialise, stdenv, stm, taffybar, text
-, transformers, X11, xmonad, xmonad-contrib
+{ mkDerivation, async, base, bytestring, chronos, clock
+, config-value, containers, dbus, directory, gi-gtk, gi-gtk-hs
+, gtk3, microlens, mtl, optparse-applicative, serialise, stdenv
+, stm, taffybar, text, transformers, X11, xmonad, xmonad-contrib
 }:
 mkDerivation {
   pname = "xalternative";
@@ -10,9 +10,9 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    async base chronos clock config-value containers dbus directory
-    gi-gtk gi-gtk-hs gtk3 microlens serialise stm taffybar text
-    transformers X11 xmonad xmonad-contrib
+    async base bytestring chronos clock config-value containers dbus
+    directory gi-gtk gi-gtk-hs gtk3 microlens serialise stm taffybar
+    text transformers X11 xmonad xmonad-contrib
   ];
   executableHaskellDepends = [
     async base chronos dbus gi-gtk gi-gtk-hs gtk3 mtl

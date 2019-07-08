@@ -71,9 +71,12 @@ library
                        XFocus.DBus.Server
                        XFocus.Task
 
+                       IPC.DBus
+
   build-depends:
                        base
                      , async
+                     , bytestring
                      , chronos
                      , clock
                      , config-value
