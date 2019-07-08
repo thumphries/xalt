@@ -28,8 +28,8 @@ newState :: IO State
 newState =
   TMVar.newTMVarIO Nothing
 
-submit' :: State -> Task -> IO (Maybe SubmitResponse)
-submit' st t = do
+submit' :: State -> SubmitRequest -> IO (Maybe SubmitResponse)
+submit' st (SubmitRequest t) = do
   v <- STM.atomically $ TMVar.takeTMVar st
   case v of
     Just _task -> do
@@ -40,21 +40,21 @@ submit' st t = do
       STM.atomically $ TMVar.putTMVar st (Just rt)
       pure . Just $
         SubmitResponse {
-            submitTask = runningTask rt
-          , submitTaskStarted = runningTaskStarted rt
+            submitRspTask = runningTask rt
+          , submitRspTaskStarted = runningTaskStarted rt
           }
 
-status' :: State -> IO (Maybe StatusResponse)
-status' st = do
+status' :: State -> StatusRequest -> IO (Maybe StatusResponse)
+status' st StatusRequest = do
   mv <- STM.atomically $ TMVar.tryReadTMVar st
   case mv of
     Just (Just rt) -> do
       ts <- runningTaskPoll rt
       pure . Just $
         StatusResponse {
-            statusTask = runningTask rt
-          , statusTaskStarted = runningTaskStarted rt
-          , statusTaskStatus = ts
+            statusRspTask = runningTask rt
+          , statusRspTaskStarted = runningTaskStarted rt
+          , statusRspTaskStatus = ts
           }
     _ ->
       pure Nothing

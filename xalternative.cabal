@@ -68,6 +68,7 @@ library
                        XFocus.API
                        XFocus.API.Memory
                        XFocus.DBus.Client
+                       XFocus.DBus.Common
                        XFocus.DBus.Server
                        XFocus.Task
 

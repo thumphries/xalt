@@ -45,25 +45,25 @@ fork client api = do
 submit'' :: API -> Text -> Int64 -> IO ()
 submit'' api tn tm = do
   putStrLn $ "submit " ++ show tn ++ show tm
-  _ <- apiSubmit api (Task (TaskName tn) (mins tm))
+  _ <- apiSubmit api (SubmitRequest (Task (TaskName tn) (mins tm)))
   pure ()
 
 status'' :: API -> IO (Text, Text, Text)
 status'' api = do
   putStrLn $ "status"
-  msr <- apiStatus api
+  msr <- apiStatus api StatusRequest
   let
-    name = maybe "" (unTaskName . taskName . statusTask) msr
-    status = maybe "" (T.pack . show . statusTaskStatus) msr
+    name = maybe "" (unTaskName . taskName . statusRspTask) msr
+    status = maybe "" (T.pack . show . statusRspTaskStatus) msr
     remaining = maybe "" printRemaining msr
   pure $ (name, status, remaining)
 
 printRemaining :: StatusResponse -> Text
 printRemaining sr =
-  case statusTaskStatus sr of
+  case statusRspTaskStatus sr of
     StatusRunning elapsed ->
       renderTimespan
-        (taskDuration (statusTask sr) `timespanDifference` elapsed)
+        (taskDuration (statusRspTask sr) `timespanDifference` elapsed)
     _ ->
       ""
 

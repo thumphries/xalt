@@ -11,6 +11,8 @@ import           Data.Text (Text)
 import qualified DBus as DBus
 import qualified DBus.Client as DBus
 
+-- import qualified IPC.DBus as IPC
+
 
 status :: DBus.Client -> IO Text
 status client = do
