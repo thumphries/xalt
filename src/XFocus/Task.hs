@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 module XFocus.Task (
@@ -24,6 +25,8 @@ import qualified Control.Concurrent.Async as A
 
 import           Data.Text (Text)
 
+import           GHC.Generics (Generic)
+
 import qualified System.Clock as Clock
 
 
@@ -31,26 +34,26 @@ data Task =
   Task {
       taskName :: TaskName
     , taskDuration :: Timespan
-    } deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord, Show, Generic)
 
 newtype TaskName =
   TaskName {
       unTaskName :: Text
-    } deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord, Show, Generic)
 
 data StopReason =
     Abandon
   | ContextSwitch
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data TaskStatus =
     StatusRunning Timespan
   | StatusComplete
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data TaskResult =
     ResultComplete
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data RunningTask =
   RunningTask {

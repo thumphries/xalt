@@ -84,6 +84,7 @@ library
                      , gi-gtk-hs
                      , gtk3
                      , microlens
+                     , serialise
                      , stm
                      , taffybar
                      , text

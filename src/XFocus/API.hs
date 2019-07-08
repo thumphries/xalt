@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module XFocus.API (
     API (..)
@@ -7,6 +8,8 @@ module XFocus.API (
 
 
 import           Chronos (Time)
+
+import           GHC.Generics (Generic)
 
 import           XFocus.Task
 
@@ -23,11 +26,11 @@ data SubmitResponse =
   SubmitResponse {
       submitTask :: Task
     , submitTaskStarted :: Time
-    } deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord, Show, Generic)
 
 data StatusResponse =
   StatusResponse {
       statusTask :: Task
     , statusTaskStarted :: Time
     , statusTaskStatus :: TaskStatus
-    } deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord, Show, Generic)
