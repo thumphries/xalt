@@ -29,10 +29,13 @@ import           Control.Concurrent (threadDelay)
 
 import           Data.Int (Int64)
 import           Data.Text (Text)
+import qualified Data.Text as T
 
 import           GHC.Generics (Generic)
 
 import qualified System.Clock as Clock
+
+import           Text.Printf
 
 
 newtype Time =
@@ -54,10 +57,15 @@ newtype Duration =
 instance Serialise Duration
 
 renderDuration :: Duration -> Text
-renderDuration =
-  Chronos.encodeTimespan (Chronos.SubsecondPrecisionFixed 0)
-    . Chronos.Timespan
-    . unDuration
+renderDuration (Duration nanos) =
+  let
+    secs = nanos `div` 1000000000
+    secs' = secs `mod` 60
+    minutes = secs `div` 60
+    hours = minutes `div` 60
+    minutes' = minutes `mod` 60
+  in
+    T.pack (printf "%02d:%02d:%02d" hours minutes' secs')
 
 delayDuration :: Duration -> IO ()
 delayDuration (Duration nanos) =
