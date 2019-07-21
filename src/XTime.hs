@@ -12,6 +12,7 @@ module XTime (
   , renderDuration
   , delayDuration
   , durationDifference
+  , minute
 
   -- * Clocks
   , Clock (..)
@@ -64,6 +65,10 @@ delayDuration (Duration nanos) =
 
 durationDifference :: Duration -> Duration -> Duration
 durationDifference = (-)
+
+minute :: Duration
+minute =
+  Duration (60 * 60000000000)
 
 -- ---------------------------------------------------------------------------
 
