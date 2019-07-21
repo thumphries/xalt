@@ -21,6 +21,6 @@ main = do
     apiSubmit api . SubmitRequest $
       Task {
           taskName = TaskName "Hello, world!"
-        , taskDuration = minute * 10
+        , taskDuration = minute
         }
   exec client api
