@@ -28,29 +28,16 @@ executable xbar
   build-depends:
                        base
                      , dbus
-                     , gi-gtk
-                     , gi-gtk-hs
-                     , gtk3
-                     , mtl
-                     , taffybar
-                     , text
-                     , transformers
                      , xalternative
 
-executable xfoc
+executable xfocus
   default-language:    Haskell2010
   ghc-options:         -Wall -Werror -O2 -threaded -rtsopts
   hs-source-dirs:      main
   main-is:             xfoc.hs
   build-depends:
                        base
-                     , async
-                     , chronos
                      , dbus
-                     , mtl
-                     , stm
-                     , text
-                     , transformers
                      , xalternative
 
 
@@ -63,6 +50,10 @@ library
                        XAlternative
                        XAlternative.Config
                        XAlternative.Config.Validation
+
+                       XBar
+                       XBar.Widget.Battery
+                       XBar.Widget.Focus
 
                        XFocus
                        XFocus.API
@@ -90,6 +81,7 @@ library
                      , gi-gtk-hs
                      , gtk3
                      , microlens
+                     , mtl
                      , serialise
                      , stm
                      , taffybar
