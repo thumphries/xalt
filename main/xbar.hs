@@ -31,6 +31,7 @@ import qualified System.Taffybar.Widget.Workspaces as TW
 
 import           Text.Printf (printf)
 
+import qualified XFocus.API as XFocus
 import qualified XFocus.DBus.Client as XFocus
 
 
@@ -92,7 +93,9 @@ xfoc :: TaffyIO Widget
 xfoc = do
   client <- liftIO DBus.connectSession
   liftIO $
-    PL.pollingLabelNew "" 1.0 (XFocus.status client)
+    PL.pollingLabelNew "" 1.0 $ do
+      sr <- XFocus.status client XFocus.StatusRequest
+      pure $ T.pack (show sr)
 
 -- -----------------------------------------------------------------------------
 

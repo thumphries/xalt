@@ -1,28 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
 module XFocus.DBus.Server (
-    fork
-  , exec
+    exec
   ) where
 
 
-import           Control.Concurrent (threadDelay)
-import           Control.Monad (forever, when)
-
 import qualified DBus.Client as DBus
 
+import           IPC.DBus
+
 import           XFocus.API
--- import           XFocus.Task
+import           XFocus.DBus.Common
 
 
 exec :: DBus.Client -> API -> IO ()
 exec client api = do
-  fork client api
-  forever (threadDelay 3000000)
+  server client interface task [
+      exporting submit (submit' api)
+    , exporting status (status' api)
+    ]
 
-fork :: DBus.Client -> API -> IO ()
-fork client _api = do
-  -- Request a unique name on the bus.
-  requestResult <- DBus.requestName client "me.utf8.xfocus" []
-  when (requestResult /= DBus.NamePrimaryOwner) $
-    fail "Another service owns the \"com.example.exporting\" bus name"
-  pure ()
+submit' :: API -> SubmitRequest -> IO (Maybe SubmitResponse)
+submit' = apiSubmit
+
+status' :: API -> StatusRequest -> IO (Maybe StatusResponse)
+status' = apiStatus

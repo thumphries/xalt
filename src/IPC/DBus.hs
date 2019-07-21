@@ -9,6 +9,8 @@ module IPC.DBus where
 import           Codec.Serialise (Serialise)
 import qualified Codec.Serialise as S
 
+import           Control.Concurrent (threadDelay)
+import           Control.Monad (forever, when)
 import           Control.Monad.IO.Class (MonadIO (..))
 import           Control.Monad.Trans.Except
 
@@ -77,6 +79,27 @@ exporting method k =
     , responseCodec = mkCodec
     , handler = k
     }
+
+server ::
+     DBus.Client
+  -> InterfaceName
+  -> ResourceName
+  -> [ExportedMethod]
+  -> IO ()
+server client iface resource methods = do
+  reserveName client iface
+  export client iface resource methods
+  forever (threadDelay 3000000)
+
+reserveName :: DBus.Client -> InterfaceName -> IO ()
+reserveName client iface = do
+  requestResult <- DBus.requestName client (busName iface) []
+  when (requestResult /= DBus.NamePrimaryOwner) $
+    fail $
+      "Another service owns the \""
+        <> T.unpack (unInterfaceName iface)
+        <> "\" bus name"
+
 
 export ::
      DBus.Client

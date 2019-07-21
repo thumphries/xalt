@@ -11,8 +11,8 @@ interface :: InterfaceName
 interface =
   InterfaceName "me.utf8.xfocus"
 
-resource :: ResourceName
-resource =
+task :: ResourceName
+task =
   ResourceName "/task"
 
 submit :: Method SubmitRequest SubmitResponse
