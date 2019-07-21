@@ -4,22 +4,18 @@
 module XFocus.Task (
     Task (..)
   , TaskName (..)
+  , Duration (..)
   , StopReason (..)
   , TaskStatus (..)
   , TaskResult (..)
   , RunningTask (..)
   , runTask
   , stopTask
-  , renderTimespan
-  , delayTimespan
-  , timespanDifference
   ) where
 
 
-import           Chronos (Time, Timespan (..))
-import qualified Chronos
+import           Codec.Serialise (Serialise)
 
-import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (Async)
 import qualified Control.Concurrent.Async as A
 
@@ -27,33 +23,39 @@ import           Data.Text (Text)
 
 import           GHC.Generics (Generic)
 
-import qualified System.Clock as Clock
+import           XTime (Time, Duration, Clock)
+import qualified XTime as XT
 
 
 data Task =
   Task {
       taskName :: TaskName
-    , taskDuration :: Timespan
+    , taskDuration :: Duration
     } deriving (Eq, Ord, Show, Generic)
+instance Serialise Task
 
 newtype TaskName =
   TaskName {
       unTaskName :: Text
     } deriving (Eq, Ord, Show, Generic)
+instance Serialise TaskName
 
 data StopReason =
     Abandon
   | ContextSwitch
   deriving (Eq, Ord, Show, Generic)
+instance Serialise StopReason
 
 data TaskStatus =
-    StatusRunning Timespan
+    StatusRunning Duration
   | StatusComplete
   deriving (Eq, Ord, Show, Generic)
+instance Serialise TaskStatus
 
 data TaskResult =
     ResultComplete
   deriving (Eq, Ord, Show, Generic)
+instance Serialise TaskResult
 
 data RunningTask =
   RunningTask {
@@ -65,9 +67,9 @@ data RunningTask =
 
 runTask :: Task -> IO RunningTask
 runTask t@(Task _name duration) = do
-  now <- Chronos.now
+  now <- XT.now
 
-  t0 <- Clock.getTime Clock.Boottime
+  t0 <- XT.boot
   let
     poll =
       checkElapsed duration t0 (pure . StatusRunning) (pure StatusComplete)
@@ -75,7 +77,7 @@ runTask t@(Task _name duration) = do
     tick = do
       checkElapsed duration t0
         (\elapsed -> do
-           delayTimespan (duration `timespanDifference` elapsed)
+           XT.delayDuration (duration `XT.durationDifference` elapsed)
            tick)
         (pure ResultComplete)
 
@@ -92,29 +94,12 @@ stopTask :: RunningTask -> IO ()
 stopTask rt =
   A.cancel (runningTaskThread rt)
 
-checkElapsed :: Timespan -> Clock.TimeSpec -> (Timespan -> IO a) -> IO a -> IO a
+checkElapsed :: Duration -> Clock -> (Duration -> IO a) -> IO a -> IO a
 checkElapsed duration t0 running done = do
-  t1 <- Clock.getTime Clock.Boottime
-  let elapsed = specToSpan (t1 - t0)
+  t1 <- XT.boot
+  let elapsed = t1 `XT.clockDifference` t0
   case elapsed >= duration of
     True ->
       done
     False ->
       running elapsed
-
-specToSpan :: Clock.TimeSpec -> Timespan
-specToSpan (Clock.TimeSpec secs nanos) =
-  Timespan (nanos + (secs * 1000000000))
-
-delayTimespan :: Timespan -> IO ()
-delayTimespan (Timespan nanos) =
-  threadDelay (fromIntegral (nanos `div` 1000))
-
-timespanDifference :: Timespan -> Timespan -> Timespan
-timespanDifference t0 t1 =
-  Timespan $
-    getTimespan t0 - getTimespan t1
-
-renderTimespan :: Timespan -> Text
-renderTimespan =
-  Chronos.encodeTimespan (Chronos.SubsecondPrecisionFixed 0)

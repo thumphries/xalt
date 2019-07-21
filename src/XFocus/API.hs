@@ -9,13 +9,13 @@ module XFocus.API (
   ) where
 
 
-import           Chronos (Time)
-
 import           Codec.Serialise (Serialise)
 
 import           GHC.Generics (Generic)
 
 import           XFocus.Task
+
+import           XTime (Time)
 
 
 data API =

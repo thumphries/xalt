@@ -72,6 +72,8 @@ library
                        XFocus.DBus.Server
                        XFocus.Task
 
+                       XTime
+
                        IPC.DBus
 
   build-depends:
