@@ -25,10 +25,12 @@ xbar =
           workspaces
         , layout
         ]
+    , SC.centerWidgets = [
+          Focus.widget
+        ]
     , SC.endWidgets = [
           clock
         , Battery.widget
-        , Focus.widget
         ]
     }
 
