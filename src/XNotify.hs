@@ -1,6 +1,6 @@
--- | A library for issuing notifications using FreeDesktop.org Desktop
--- Notifications protocol. This protocol is used to communicate with services
--- such as Ubuntu's NotifyOSD.
+-- | FreeDesktop.org Desktop Notifications.
+--
+-- Forked from fdo-notify.
 --
 -- Copyright (c) 2009, Max Rabkin
 --
@@ -73,6 +73,17 @@ import           DBus.Client
 
 
 
+-- |Contents of a notification
+data Note = Note { appName :: String
+                 , appImage :: Maybe Icon
+                 , summary :: String
+                 , body :: Maybe Body
+                 , actions :: [(Action, String)]
+                 , hints :: [Hint]
+                 , expiry :: Timeout
+                 }
+    deriving (Eq, Show)
+
 -- |A 'Note' with default values.
 -- All fields are blank except for 'expiry', which is 'Dependent'.
 blankNote :: Note
@@ -84,17 +95,6 @@ blankNote = Note { appName=""
                    , hints=[]
                    , expiry=Dependent
                    }
-
--- |Contents of a notification
-data Note = Note { appName :: String
-                 , appImage :: Maybe Icon
-                 , summary :: String
-                 , body :: Maybe Body
-                 , actions :: [(Action, String)]
-                 , hints :: [Hint]
-                 , expiry :: Timeout
-                 }
-    deriving (Eq, Show)
 
 -- |Message bodies may contain simple markup.
 -- NotifyOSD doesn't support any markup.

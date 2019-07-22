@@ -40,6 +40,15 @@ executable xfocus
                      , dbus
                      , xalternative
 
+executable xnotify
+  default-language:    Haskell2010
+  ghc-options:         -Wall -Werror -O2 -threaded -rtsopts
+  hs-source-dirs:      main
+  main-is:             xnotify.hs
+  build-depends:
+                       base
+                     , dbus
+                     , xalternative
 
 library
   default-language:    Haskell2010
