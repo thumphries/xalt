@@ -63,6 +63,8 @@ library
                        XFocus.DBus.Server
                        XFocus.Task
 
+                       XNotify
+
                        XTime
 
                        IPC.DBus
