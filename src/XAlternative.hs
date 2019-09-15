@@ -83,6 +83,7 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
           ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
         , ((mm, xK_z), SP.namedScratchpadAction (scratchpads term) "htop")
+        , ((mm, xK_x), SP.namedScratchpadAction (scratchpads term) "ghci")
 
         -- TODO fold into Command
         , ((mm, xK_s), X.withFocused (Snap.snapMagicResize [Snap.L, Snap.R, Snap.U, Snap.D] Nothing Nothing))
