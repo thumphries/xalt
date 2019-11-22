@@ -82,6 +82,8 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
           ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
+        , ((mm, xK_z), SP.namedScratchpadAction (scratchpads term) "htop")
+        , ((mm, xK_x), SP.namedScratchpadAction (scratchpads term) "ghci")
 
         -- TODO fold into Command
         , ((mm, xK_s), X.withFocused (Snap.snapMagicResize [Snap.L, Snap.R, Snap.U, Snap.D] Nothing Nothing))
@@ -302,6 +304,20 @@ scratchpads term = [
       , SP.cmd = T.unpack term <> " --role=scratchpad"
       , SP.query = role =? "scratchpad"
       , SP.hook = rect 0.1 0.1 0.8 0.33
+      }
+  , SP.NS {
+        SP.name = "htop"
+         -- FIX this role selector only works for xterm/termite
+      , SP.cmd = T.unpack term <> " --role=scratchpad-htop --exec=htop"
+      , SP.query = role =? "scratchpad-htop"
+      , SP.hook = rect 0.1 0.56 0.8 0.33
+      }
+  , SP.NS {
+        SP.name = "ghci"
+         -- FIX this role selector only works for xterm/termite
+      , SP.cmd = T.unpack term <> " --role=scratchpad-ghci --exec=ghci"
+      , SP.query = role =? "scratchpad-ghci"
+      , SP.hook = rect 0.1 0.56 0.8 0.33
       }
   ]
 
