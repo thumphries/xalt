@@ -283,6 +283,8 @@ action act =
   case act of
     C.Rect x y w h ->
       rect x y w h
+    C.Tile ->
+      X.idHook
 
 role :: X.Query String
 role = MH.stringProperty "WM_WINDOW_ROLE"

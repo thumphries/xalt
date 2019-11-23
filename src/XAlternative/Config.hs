@@ -65,6 +65,7 @@ data Selector =
 
 data Action =
     Rect Rational Rational Rational Rational
+  | Tile
   deriving (Eq, Ord, Show)
 
 data Scratchpad =
@@ -147,6 +148,11 @@ validateSelector v =
 
 validateAction :: Value -> Validation Action
 validateAction v =
+       validateRect v
+  <||> (Tile <$ atomConst "tile" v)
+
+validateRect :: Value -> Validation Action
+validateRect v =
   section "rect" v $ \r ->
     Rect
       <$> section "x" r rational
