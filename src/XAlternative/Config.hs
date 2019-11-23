@@ -6,6 +6,7 @@ module XAlternative.Config (
   , KeyMap (..)
   , Command (..)
   , Rules (..)
+  , Scratchpad (..)
   , Selector (..)
   , Action (..)
   , parseConfigFile
@@ -25,6 +26,7 @@ data Config = Config {
     general :: General
   , keyMap :: KeyMap
   , rules :: Rules
+  , scratchpads :: [Scratchpad]
   } deriving (Eq, Ord, Show)
 
 data General = General {
@@ -48,6 +50,7 @@ data Command =
   | Fullscreen
   | Float
   | Sink
+  | Scratch Text
   deriving (Eq, Ord, Show)
 
 newtype Rules = Rules {
@@ -64,6 +67,14 @@ data Action =
     Rect Rational Rational Rational Rational
   deriving (Eq, Ord, Show)
 
+data Scratchpad =
+  Scratchpad {
+      spName :: Text
+    , spCmd :: Text
+    , spSelector :: Selector
+    , spAction :: Action
+    } deriving (Eq, Ord, Show)
+
 -- -----------------------------------------------------------------------------
 
 parseConfigFile :: FilePath -> IO (Either ConfigError Config)
@@ -76,6 +87,7 @@ validateConfig v =
     <$> validateGeneral v
     <*> validateKeyMap v
     <*> validateRules v
+    <*> validateScratchpads v
 
 validateGeneral :: Value -> Validation General
 validateGeneral v =
@@ -104,6 +116,7 @@ validateCommand v =
   <||> (Fullscreen <$ atomConst "fullscreen" v)
   <||> (Float <$ atomConst "float" v)
   <||> (Sink <$ atomConst "sink" v)
+  <||> (Scratch <$> section "scratch" v text)
 
 validateRules :: Value -> Validation Rules
 validateRules v =
@@ -111,6 +124,20 @@ validateRules v =
     fmap (Rules . M.fromList) . for rs $ \sa ->
       (,) <$> section "selector" sa validateSelector
           <*> section "action" sa validateAction
+
+validateScratchpads :: Value -> Validation [Scratchpad]
+validateScratchpads v =
+  section "scratchpads" v . list $ \sps ->
+    for sps $ \sp ->
+      validateScratchpad sp
+
+validateScratchpad :: Value -> Validation Scratchpad
+validateScratchpad v =
+  Scratchpad
+    <$> section "name" v text
+    <*> section "command" v text
+    <*> section "selector" v validateSelector
+    <*> section "action" v validateAction
 
 validateSelector :: Value -> Validation Selector
 validateSelector v =

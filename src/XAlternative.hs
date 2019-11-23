@@ -11,7 +11,6 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid ((<>))
 import           Data.Ratio ((%))
-import           Data.Text (Text)
 import qualified Data.Text as T
 
 import           Graphics.X11.Types
@@ -59,7 +58,7 @@ xAlternative cfg = do
   X.launch $ taffybar (xConfig cfg)
 
 xConfig :: Config -> XConfig Layouts
-xConfig cfg@(C.Config (C.General term bWidth nBorder fBorder) _keymap _rules) =
+xConfig cfg@(C.Config (C.General term bWidth nBorder fBorder) _keymap _rules _pads) =
   X.def {
       terminal = T.unpack term
     , modMask = mod4Mask
@@ -74,19 +73,15 @@ xConfig cfg@(C.Config (C.General term bWidth nBorder fBorder) _keymap _rules) =
     }
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
-xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
+xKeys (C.Config (C.General _term _b _n _f) keymap _rules pads) c =
   let
     move d =
       X.withFocused (Snap.snapMove d Nothing)
 
     ckeys =
       customKeys (const []) (\(XConfig {modMask = mm}) -> [
-          ((mm, xK_grave), SP.namedScratchpadAction (scratchpads term) "terminal")
-        , ((mm, xK_z), SP.namedScratchpadAction (scratchpads term) "htop")
-        , ((mm, xK_x), SP.namedScratchpadAction (scratchpads term) "ghci")
-
         -- TODO fold into Command
-        , ((mm, xK_s), X.withFocused (Snap.snapMagicResize [Snap.L, Snap.R, Snap.U, Snap.D] Nothing Nothing))
+          ((mm, xK_s), X.withFocused (Snap.snapMagicResize [Snap.L, Snap.R, Snap.U, Snap.D] Nothing Nothing))
         , ((mm, xK_Left), move Snap.L)
         , ((mm, xK_Right), move Snap.R)
         , ((mm, xK_Up), move Snap.U)
@@ -98,7 +93,7 @@ xKeys (C.Config (C.General term _b _n _f) keymap _rules) c =
         ]) c
 
     ezkeys =
-      EZ.mkKeymap c (fmap (bimap T.unpack xCmd) (M.toList (C.unKeyMap keymap)))
+      EZ.mkKeymap c (fmap (bimap T.unpack (xCmd pads)) (M.toList (C.unKeyMap keymap)))
   in
     ezkeys <> ckeys
 
@@ -146,8 +141,8 @@ xMouseBindings cfg =
   in
     custom cfg <> mouseBindings X.def cfg
 
-xCmd :: C.Command -> X ()
-xCmd cmd =
+xCmd :: [C.Scratchpad] -> C.Command -> X ()
+xCmd pads cmd =
   case cmd of
     C.Spawn x ->
       X.spawn (T.unpack x)
@@ -174,6 +169,8 @@ xCmd cmd =
       X.withFocused $ \w ->
         X.windows $
           W.sink w
+    C.Scratch x ->
+      SP.namedScratchpadAction (scratchpads pads) (T.unpack x)
 
 -- -----------------------------------------------------------------------------
 -- LayoutHook
@@ -189,7 +186,7 @@ type Layouts' =
   ||| Split
   ||| TileLeft
   ||| TileRight
-  ||| Lane
+  ||| Middle
   ||| Tile
   ||| Pile
   ||| Tabbed
@@ -211,9 +208,9 @@ type TileLeft =
   Renamed (Gaps Tall)
 
 type TileRight =
-  Renamed (Gaps (ModifiedLayout Reflect TileLeft))
+  Renamed (ModifiedLayout Reflect TileLeft)
 
-type Lane =
+type Middle =
   Renamed (Gaps ThreeCol)
 
 type Tile =
@@ -237,15 +234,15 @@ xLayoutHook =
     bsp  = rename "BSP" . gaps $ BSP.emptyBSP
     splt = rename "Split" . gaps $ Mirror (Tall 2 (2 % 100) (4 % 5))
     sptl = rename "Left" . gaps $ Tall 1 (2 % 100) (7 % 10)
-    sptr = rename "Right" . gaps $ reflectHoriz sptl
-    lane = rename "Middle" . gaps $ ThreeColMid 1 (3 % 100) (1 % 2)
+    sptr = rename "Right" $ reflectHoriz sptl
+    midd = rename "Middle" . gaps $ ThreeColMid 1 (3 % 100) (1 % 2)
     tile = rename "Tile" . gaps $ Grid
     tabs = rename "Tabs" . gaps $ tabbedAlways shrinkText tabsTheme
     magn = rename "Stack" . gaps $ centerMaster Grid
     full = Full
   in
     lessBorders OnlyScreenFloat $
-      bsp ||| splt ||| sptl ||| sptr ||| lane ||| tile ||| magn ||| tabs ||| full
+      bsp ||| splt ||| sptl ||| sptr ||| midd ||| tile ||| magn ||| tabs ||| full
 
 tabsTheme :: Tabbed.Theme
 tabsTheme =
@@ -257,10 +254,10 @@ tabsTheme =
 -- ManageHook
 
 xManageHook :: Config -> X.ManageHook
-xManageHook (C.Config (C.General term _bWidth _bNorm _bFoc) _keymap rules) =
+xManageHook (C.Config (C.General _term _bWidth _bNorm _bFoc) _keymap rules pads) =
   MH.composeAll [
       rulesHook rules
-    , SP.namedScratchpadManageHook (scratchpads term)
+    , SP.namedScratchpadManageHook (scratchpads pads)
     ]
 
 rulesHook :: C.Rules -> X.ManageHook
@@ -296,30 +293,18 @@ rect x y w h = SP.customFloating (RationalRect x y w h)
 -- -----------------------------------------------------------------------------
 -- Scratchpads
 
-scratchpads :: Text -> [SP.NamedScratchpad]
-scratchpads term = [
-    SP.NS {
-        SP.name = "terminal"
-         -- FIX this role selector only works for xterm/termite
-      , SP.cmd = T.unpack term <> " --role=scratchpad"
-      , SP.query = role =? "scratchpad"
-      , SP.hook = rect 0.1 0.1 0.8 0.33
-      }
-  , SP.NS {
-        SP.name = "htop"
-         -- FIX this role selector only works for xterm/termite
-      , SP.cmd = T.unpack term <> " --role=scratchpad-htop --exec=htop"
-      , SP.query = role =? "scratchpad-htop"
-      , SP.hook = rect 0.1 0.56 0.8 0.33
-      }
-  , SP.NS {
-        SP.name = "ghci"
-         -- FIX this role selector only works for xterm/termite
-      , SP.cmd = T.unpack term <> " --role=scratchpad-ghci --exec=ghci"
-      , SP.query = role =? "scratchpad-ghci"
-      , SP.hook = rect 0.1 0.56 0.8 0.33
-      }
-  ]
+scratchpads :: [C.Scratchpad] -> [SP.NamedScratchpad]
+scratchpads =
+  fmap scratchpad
+
+scratchpad :: C.Scratchpad -> SP.NamedScratchpad
+scratchpad (C.Scratchpad name cmd select act) =
+  SP.NS {
+      SP.name = T.unpack name
+    , SP.cmd = T.unpack cmd
+    , SP.query = selector select
+    , SP.hook = action act
+    }
 
 -- -----------------------------------------------------------------------------
 -- Taffybar
