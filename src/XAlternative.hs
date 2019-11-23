@@ -58,7 +58,7 @@ xAlternative cfg = do
   X.launch $ taffybar (xConfig cfg)
 
 xConfig :: Config -> XConfig Layouts
-xConfig cfg@(C.Config (C.General term bWidth nBorder fBorder) _keymap _rules _pads) =
+xConfig cfg@(C.Config g@(C.General term bWidth nBorder fBorder _gaps) _keymap _rules _pads) =
   X.def {
       terminal = T.unpack term
     , modMask = mod4Mask
@@ -67,13 +67,13 @@ xConfig cfg@(C.Config (C.General term bWidth nBorder fBorder) _keymap _rules _pa
     , focusedBorderColor = T.unpack fBorder
     , keys = xKeys cfg
     , mouseBindings = xMouseBindings
-    , layoutHook = xLayoutHook
+    , layoutHook = xLayoutHook g
     , manageHook = xManageHook cfg
     , workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     }
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
-xKeys (C.Config (C.General _term _b _n _f) keymap _rules pads) c =
+xKeys (C.Config (C.General _term _b _n _f _g) keymap _rules pads) c =
   let
     move d =
       X.withFocused (Snap.snapMove d Nothing)
@@ -223,12 +223,13 @@ type Tabbed =
   Renamed (Gaps (ModifiedLayout (Decoration TabbedDecoration DefaultShrinker) Simplest))
 
 
-xLayoutHook :: Layouts Window
-xLayoutHook =
+xLayoutHook :: C.General -> Layouts Window
+xLayoutHook cfgG =
   let
+    g = C.gaps cfgG
     rename x = renamed [Replace x]
-    screenBorder = Border 10 10 10 10
-    windowBorder = Border 10 10 10 10
+    screenBorder = Border g g g g
+    windowBorder = Border g g g g
     gaps = spacingRaw False screenBorder True windowBorder True
 
     bsp  = rename "BSP" . gaps $ BSP.emptyBSP
@@ -254,7 +255,7 @@ tabsTheme =
 -- ManageHook
 
 xManageHook :: Config -> X.ManageHook
-xManageHook (C.Config (C.General _term _bWidth _bNorm _bFoc) _keymap rules pads) =
+xManageHook (C.Config _gen _keymap rules pads) =
   MH.composeAll [
       rulesHook rules
     , SP.namedScratchpadManageHook (scratchpads pads)

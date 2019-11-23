@@ -34,6 +34,7 @@ data General = General {
   , borderWidth :: Integer
   , normalBorderColor :: Text
   , focusedBorderColor :: Text
+  , gaps :: Integer
   } deriving (Eq, Ord, Show)
 
 newtype KeyMap = KeyMap {
@@ -98,6 +99,7 @@ validateGeneral v =
       <*> section "border-width" s integer
       <*> section "border-color" s text
       <*> section "border-color-focused" s text
+      <*> section "window-gaps" s integer
 
 validateKeyMap :: Value -> Validation KeyMap
 validateKeyMap v =
