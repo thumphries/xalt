@@ -7,7 +7,9 @@ module XAlternative where
 
 
 import           Control.Monad (liftM2)
+import           Control.Monad.IO.Class (liftIO)
 
+import           Data.Foldable (for_)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid ((<>))
@@ -63,7 +65,7 @@ xAlternative cfg = do
   X.launch $ taffybar (xConfig cfg)
 
 xConfig :: Config -> XConfig Layouts
-xConfig cfg@(C.Config g@(C.General term bWidth nBorder fBorder _gaps) _keymap _rules _pads) =
+xConfig cfg@(C.Config g@(C.General term _sel bWidth nBorder fBorder _gaps) _keymap _rules _pads) =
   X.def {
       X.terminal = T.unpack term
     , X.modMask = mod4Mask
@@ -77,8 +79,8 @@ xConfig cfg@(C.Config g@(C.General term bWidth nBorder fBorder _gaps) _keymap _r
     , X.workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     }
 
-thing :: [C.Scratchpad] -> C.Keymap -> X ()
-thing pads keymap = do
+thing :: Text -> [C.Scratchpad] -> C.Keymap -> X ()
+thing sel pads keymap = do
   let
     keyss :: [C.Keybind]
     keyss =
@@ -134,23 +136,29 @@ thing pads keymap = do
       . T.replace "'" "&#39;"
       . T.replace "&" "&amp;"
 
-    input :: [Text]
-    input =
-      fmap render keyss
+    runSelector :: [Text] -> IO Text
+    runSelector input =
+      fmap T.pack $
+        runProcessWithInput (T.unpack sel) [] (T.unpack (T.unlines input))
 
-  choice <-
-    runProcessWithInput
-      "/usr/bin/rofi" ["-dmenu", "-format", "i", "-markup-rows"]
-      (T.unpack (T.unlines input))
+    select :: [a] -> (a -> Text) -> IO (Maybe a)
+    select xs f = do
+      -- FIXME implies selector behaves like rofi
+      choice <- runSelector (fmap f xs)
+      pure $
+        case readMaybe (T.unpack choice) of
+          Just i ->
+            pure (xs !! i)
+          Nothing ->
+            Nothing
 
-  case readMaybe choice of
-    Just i ->
-      xCmd pads . C.kbCommand $ keyss !! i
-    Nothing ->
-      pure ()
+  choice <- liftIO $ select keyss render
+  for_ choice $ \kb ->
+    xCmd pads (C.kbCommand kb)
+
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
-xKeys (C.Config (C.General _term _b _n _f _g) keymap _rules pads) c =
+xKeys (C.Config (C.General _term sel _b _n _f _g) keymap _rules pads) c =
   let
     move d =
       X.withFocused (Snap.snapMove d Nothing)
@@ -164,7 +172,7 @@ xKeys (C.Config (C.General _term _b _n _f _g) keymap _rules pads) c =
         , ((mm, xK_Up), move Snap.U)
         , ((mm, xK_Down), move Snap.D)
 
-        , ((mm, xK_r), thing pads keymap)
+        , ((mm, xK_r), thing sel pads keymap)
 
         -- TODO unsure if BSP goes into Command
         -- , ((mm, xK_r), X.sendMessage BSP.Rotate)

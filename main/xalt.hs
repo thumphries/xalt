@@ -21,6 +21,7 @@ main = do
       die
 
     (Right cfg, DryRun) -> do
+      IO.readFile (configFile opt) >>= logg
       logg (show cfg)
       pure ()
 
