@@ -24,7 +24,7 @@ import           Text.Read (readMaybe)
 import           XAlternative.Config (Config)
 import qualified XAlternative.Config as C
 
-import           XMonad (X, XConfig (..), Layout, KeyMask, KeySym)
+import           XMonad (X, XConfig, Layout, KeyMask, KeySym)
 import qualified XMonad as X
 import           XMonad.Layout ((|||), Choose, Tall (..), Full (..), Mirror (..))
 import           XMonad.Layout.Grid (Grid (..))
@@ -65,16 +65,16 @@ xAlternative cfg = do
 xConfig :: Config -> XConfig Layouts
 xConfig cfg@(C.Config g@(C.General term bWidth nBorder fBorder _gaps) _keymap _rules _pads) =
   X.def {
-      terminal = T.unpack term
-    , modMask = mod4Mask
-    , borderWidth = fromIntegral bWidth
-    , normalBorderColor = T.unpack nBorder
-    , focusedBorderColor = T.unpack fBorder
-    , keys = xKeys cfg
-    , mouseBindings = xMouseBindings
-    , layoutHook = xLayoutHook g
-    , manageHook = xManageHook cfg
-    , workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+      X.terminal = T.unpack term
+    , X.modMask = mod4Mask
+    , X.borderWidth = fromIntegral bWidth
+    , X.normalBorderColor = T.unpack nBorder
+    , X.focusedBorderColor = T.unpack fBorder
+    , X.keys = xKeys cfg
+    , X.mouseBindings = xMouseBindings
+    , X.layoutHook = xLayoutHook g
+    , X.manageHook = xManageHook cfg
+    , X.workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     }
 
 thing :: [C.Scratchpad] -> C.Keymap -> X ()
@@ -85,8 +85,23 @@ thing pads keymap = do
       C.unKeymap keymap
 
     render :: C.Keybind -> Text
-    render (C.Keybind key cmd _mdesc) =
-      escapeEntities (renderCommand cmd) <> " (<b>" <> escapeEntities key <> "</b>)"
+    render (C.Keybind keys cmd mdesc) =
+      T.unwords [
+          renderDesc cmd mdesc
+        , renderKeys keys
+        ]
+
+    renderDesc :: C.Command -> Maybe Text -> Text
+    renderDesc cmd mdesc =
+      case mdesc of
+        Just desc ->
+          escapeEntities desc
+        Nothing ->
+          escapeEntities (renderCommand cmd)
+
+    renderKeys :: Text -> Text
+    renderKeys keys =
+     "(<b>" <> escapeEntities keys <> "</b>)"
 
     renderCommand :: C.Command -> Text
     renderCommand = \case
@@ -141,7 +156,7 @@ xKeys (C.Config (C.General _term _b _n _f _g) keymap _rules pads) c =
       X.withFocused (Snap.snapMove d Nothing)
 
     ckeys =
-      customKeys (const []) (\(XConfig {modMask = mm}) -> [
+      customKeys (const []) (\(X.XConfig {X.modMask = mm}) -> [
         -- TODO fold into Command
           ((mm, xK_s), X.withFocused (Snap.snapMagicResize [Snap.L, Snap.R, Snap.U, Snap.D] Nothing Nothing))
         , ((mm, xK_Left), move Snap.L)
@@ -199,14 +214,14 @@ xMouseBindings cfg =
           snapDistance
           w
 
-    custom (XConfig {modMask = mm}) =
+    custom (X.XConfig {X.modMask = mm}) =
       M.fromList [
           ((mm, button1), mouseMove)
         , ((mm X..|. shiftMask, button1), mouseMoveExpand)
         , ((mm, button3), resizeSnap)
         ]
   in
-    custom cfg <> mouseBindings X.def cfg
+    custom cfg <> X.mouseBindings X.def cfg
 
 xCmd :: [C.Scratchpad] -> C.Command -> X ()
 xCmd pads cmd =
@@ -384,16 +399,16 @@ taffybar ::
   -> XConfig (ModifiedLayout AvoidStruts Layouts)
 taffybar cfg = do
   ewmh . TP.pagerHints $ Docks.docks cfg {
-      layoutHook = Docks.avoidStruts (layoutHook cfg)
-    , keys = liftM2 (<>) setStrutsKey (keys cfg)
+      X.layoutHook = Docks.avoidStruts (X.layoutHook cfg)
+    , X.keys = liftM2 (<>) setStrutsKey (X.keys cfg)
     }
 
 ewmh :: XConfig l -> XConfig l
 ewmh cfg =
   cfg {
-      startupHook = startupHook cfg <> EWMH.ewmhDesktopsStartup
-    , handleEventHook = handleEventHook cfg <> EWMH.ewmhDesktopsEventHook
-    , logHook = logHook cfg <> logHookNSP
+      X.startupHook = X.startupHook cfg <> EWMH.ewmhDesktopsStartup
+    , X.handleEventHook = X.handleEventHook cfg <> EWMH.ewmhDesktopsEventHook
+    , X.logHook = X.logHook cfg <> logHookNSP
     }
   where
     logHookNSP =
@@ -404,4 +419,4 @@ setStrutsKey =
   (`M.singleton` X.sendMessage ToggleStruts) . toggleStrutsKey
 
 toggleStrutsKey :: XConfig t -> (KeyMask, KeySym)
-toggleStrutsKey XConfig{modMask = modm} = (modm, xK_b )
+toggleStrutsKey X.XConfig{X.modMask = modm} = (modm, xK_b )
