@@ -3,7 +3,8 @@
 module XAlternative.Config (
     Config (..)
   , General (..)
-  , KeyMap (..)
+  , Keymap (..)
+  , Keybind (..)
   , Command (..)
   , Rules (..)
   , Scratchpad (..)
@@ -24,7 +25,7 @@ import           XAlternative.Config.Validation
 
 data Config = Config {
     general :: General
-  , keyMap :: KeyMap
+  , keyMap :: Keymap
   , rules :: Rules
   , scratchpads :: [Scratchpad]
   } deriving (Eq, Ord, Show)
@@ -37,9 +38,16 @@ data General = General {
   , gaps :: Integer
   } deriving (Eq, Ord, Show)
 
-newtype KeyMap = KeyMap {
-    unKeyMap :: Map Text Command
+newtype Keymap = Keymap {
+    unKeymap :: [Keybind]
   } deriving (Eq, Ord, Show, Semigroup, Monoid)
+
+data Keybind =
+  Keybind {
+      kbKeys :: Text
+    , kbCommand :: Command
+    , kbDescription :: Maybe Text
+    } deriving (Eq, Ord, Show)
 
 data Command =
     Spawn Text
@@ -87,7 +95,7 @@ validateConfig :: Value -> Validation Config
 validateConfig v =
   Config
     <$> validateGeneral v
-    <*> validateKeyMap v
+    <*> validateKeymap v
     <*> validateRules v
     <*> validateScratchpads v
 
@@ -101,12 +109,14 @@ validateGeneral v =
       <*> section "border-color-focused" s text
       <*> section "window-gaps" s integer
 
-validateKeyMap :: Value -> Validation KeyMap
-validateKeyMap v =
+validateKeymap :: Value -> Validation Keymap
+validateKeymap v =
   section "keymap" v . list $ \vs ->
-    fmap (KeyMap . M.fromList) . for vs $ \kb ->
-      (,) <$> section "keybind" kb text
-          <*> section "command" kb validateCommand
+    fmap Keymap . for vs $ \kb ->
+      Keybind
+        <$> section "keybind" kb text
+        <*> section "command" kb validateCommand
+        <*> optional (section "description" kb text)
 
 validateCommand :: Value -> Validation Command
 validateCommand v =

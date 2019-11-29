@@ -7,9 +7,7 @@ module XAlternative where
 
 
 import           Control.Monad (liftM2)
-import           Control.Monad.IO.Class (liftIO)
 
-import           Data.Bifunctor (bimap)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid ((<>))
@@ -19,8 +17,9 @@ import qualified Data.Text as T
 
 import           Graphics.X11.Types
 
-import qualified System.IO as IO
 import qualified System.Taffybar.Support.PagerHints as TP
+
+import           Text.Read (readMaybe)
 
 import           XAlternative.Config (Config)
 import qualified XAlternative.Config as C
@@ -78,16 +77,16 @@ xConfig cfg@(C.Config g@(C.General term bWidth nBorder fBorder _gaps) _keymap _r
     , workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     }
 
-thing :: [C.Scratchpad] -> C.KeyMap -> X ()
+thing :: [C.Scratchpad] -> C.Keymap -> X ()
 thing pads keymap = do
   let
-    keyss :: [(Text, C.Command)]
+    keyss :: [C.Keybind]
     keyss =
-      M.toList (C.unKeyMap keymap)
+      C.unKeymap keymap
 
-    render :: Text -> C.Command -> Text
-    render key cmd =
-      renderCommand cmd <> " (<b>" <> T.replace "<" "\\<" (T.replace ">" "\\>" key) <> "</b>)"
+    render :: C.Keybind -> Text
+    render (C.Keybind key cmd _mdesc) =
+      escapeEntities (renderCommand cmd) <> " (<b>" <> escapeEntities key <> "</b>)"
 
     renderCommand :: C.Command -> Text
     renderCommand = \case
@@ -112,14 +111,28 @@ thing pads keymap = do
       C.Scratch x ->
         "Scratchpad " <> x
 
+    escapeEntities :: Text -> Text
+    escapeEntities =
+        T.replace "<" "&lt;"
+      . T.replace ">" "&gt;"
+      . T.replace "\"" "&quot;"
+      . T.replace "'" "&#39;"
+      . T.replace "&" "&amp;"
+
     input :: [Text]
     input =
-      fmap (uncurry render) keyss
+      fmap render keyss
 
-  choice <- runProcessWithInput "/usr/bin/rofi" ["-dmenu", "-format", "i", "-markup-rows"] (T.unpack (T.unlines input))
-  liftIO $ IO.putStrLn (show input)
-  liftIO $ IO.putStrLn choice
-  xCmd pads $ snd (keyss !! read choice)
+  choice <-
+    runProcessWithInput
+      "/usr/bin/rofi" ["-dmenu", "-format", "i", "-markup-rows"]
+      (T.unpack (T.unlines input))
+
+  case readMaybe choice of
+    Just i ->
+      xCmd pads . C.kbCommand $ keyss !! i
+    Nothing ->
+      pure ()
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
 xKeys (C.Config (C.General _term _b _n _f _g) keymap _rules pads) c =
@@ -143,8 +156,11 @@ xKeys (C.Config (C.General _term _b _n _f _g) keymap _rules pads) c =
         -- , ((mm, xK_t), X.sendMessage BSP.Swap)
         ]) c
 
+    toez (C.Keybind k cmd _d) =
+      (T.unpack k, xCmd pads cmd)
+
     ezkeys =
-      EZ.mkKeymap c (fmap (bimap T.unpack (xCmd pads)) (M.toList (C.unKeyMap keymap)))
+      EZ.mkKeymap c (fmap toez (C.unKeymap keymap))
   in
     ezkeys <> ckeys
 

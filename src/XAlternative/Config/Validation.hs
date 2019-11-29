@@ -8,6 +8,7 @@ module XAlternative.Config.Validation (
   , Validation
   , (<||>)
   , choice
+  , optional
   , Value
   , section
   , text
@@ -20,6 +21,7 @@ module XAlternative.Config.Validation (
   ) where
 
 
+import           Control.Applicative (Alternative(..), optional)
 import           Control.Applicative.Lift (Errors, runErrors, failure)
 import           Control.Monad.Trans.Reader (ReaderT (..), runReaderT)
 import qualified Control.Monad.Trans.Reader as RT
@@ -59,6 +61,7 @@ data ValidationError =
   | ExpectedFloating CV.Position Value
   | ExpectedList CV.Position Value
   | ErrorWithContext [Text] ValidationError
+  | ChoiceExhausted
   deriving (Show)
 
 newtype Validation a = Validation {
@@ -106,6 +109,13 @@ choice va vb =
 
 (<||>) :: Validation a -> Validation a -> Validation a
 (<||>) = choice
+
+emptyV :: Validation a
+emptyV = throwV ChoiceExhausted
+
+instance Alternative Validation where
+  empty = emptyV
+  (<|>) = choice
 
 withContext :: Text -> Validation a -> Validation a
 withContext v (Validation k) =
