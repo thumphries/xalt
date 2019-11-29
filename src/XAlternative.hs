@@ -1,20 +1,25 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 module XAlternative where
 
 
 import           Control.Monad (liftM2)
+import           Control.Monad.IO.Class (liftIO)
 
 import           Data.Bifunctor (bimap)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid ((<>))
 import           Data.Ratio ((%))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 import           Graphics.X11.Types
 
+import qualified System.IO as IO
 import qualified System.Taffybar.Support.PagerHints as TP
 
 import           XAlternative.Config (Config)
@@ -51,6 +56,7 @@ import           XMonad.Layout.ThreeColumns (ThreeCol (..))
 import           XMonad.Util.CustomKeys (customKeys)
 import qualified XMonad.Util.EZConfig as EZ
 import qualified XMonad.Util.NamedScratchpad as SP
+import           XMonad.Util.Run (runProcessWithInput)
 
 
 xAlternative :: Config -> IO ()
@@ -72,6 +78,49 @@ xConfig cfg@(C.Config g@(C.General term bWidth nBorder fBorder _gaps) _keymap _r
     , workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     }
 
+thing :: [C.Scratchpad] -> C.KeyMap -> X ()
+thing pads keymap = do
+  let
+    keyss :: [(Text, C.Command)]
+    keyss =
+      M.toList (C.unKeyMap keymap)
+
+    render :: Text -> C.Command -> Text
+    render key cmd =
+      renderCommand cmd <> " (<b>" <> T.replace "<" "\\<" (T.replace ">" "\\>" key) <> "</b>)"
+
+    renderCommand :: C.Command -> Text
+    renderCommand = \case
+      C.Spawn x ->
+        "Spawn " <> x
+      C.Restart ->
+        "Restart"
+      C.Promote ->
+        "Promote"
+      C.Pin ->
+        "Pin"
+      C.Unpin ->
+        "Unpin"
+      C.Magnify ->
+        "Magnify"
+      C.Fullscreen ->
+        "Fullscreen"
+      C.Float ->
+        "Float"
+      C.Sink ->
+        "Sink"
+      C.Scratch x ->
+        "Scratchpad " <> x
+
+    input :: [Text]
+    input =
+      fmap (uncurry render) keyss
+
+  choice <- runProcessWithInput "/usr/bin/rofi" ["-dmenu", "-format", "i", "-markup-rows"] (T.unpack (T.unlines input))
+  liftIO $ IO.putStrLn (show input)
+  liftIO $ IO.putStrLn choice
+  xCmd pads $ snd (keyss !! read choice)
+
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
 xKeys (C.Config (C.General _term _b _n _f _g) keymap _rules pads) c =
   let
@@ -87,9 +136,11 @@ xKeys (C.Config (C.General _term _b _n _f _g) keymap _rules pads) c =
         , ((mm, xK_Up), move Snap.U)
         , ((mm, xK_Down), move Snap.D)
 
+        , ((mm, xK_r), thing pads keymap)
+
         -- TODO unsure if BSP goes into Command
-        , ((mm, xK_r), X.sendMessage BSP.Rotate)
-        , ((mm, xK_t), X.sendMessage BSP.Swap)
+        -- , ((mm, xK_r), X.sendMessage BSP.Rotate)
+        -- , ((mm, xK_t), X.sendMessage BSP.Swap)
         ]) c
 
     ezkeys =
