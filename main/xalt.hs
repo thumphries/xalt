@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 
 import           Control.Applicative ((<**>))
 
@@ -14,22 +13,48 @@ import qualified XAlternative.Config as C
 
 main :: IO ()
 main = do
-  cfgf <- optparse
-  C.parseConfigFile cfgf >>= \case
-    Right cfg ->
-      xAlternative cfg
-    Left errs -> do
-      IO.hPutStrLn IO.stderr (show errs)
-      exitWith (ExitFailure 1)
+  opt <- optparse
+  ecfg <- C.parseConfigFile (configFile opt)
+  case (ecfg, runType opt) of
+    (Left errs, _) -> do
+      logg (show errs)
+      die
 
-optparse :: IO FilePath
+    (Right cfg, DryRun) -> do
+      logg (show cfg)
+      pure ()
+
+    (Right cfg, RealRun) ->
+      xAlternative cfg
+
+logg :: String -> IO ()
+logg =
+  IO.hPutStrLn IO.stderr
+
+die :: IO ()
+die =
+  exitWith (ExitFailure 1)
+
+optparse :: IO Opts
 optparse =
   O.execParser (O.info (opts <**> O.helper) (O.header "xalt window manager"))
 
-opts :: O.Parser FilePath
+data RunType = RealRun | DryRun
+
+data Opts =
+  Opts {
+      configFile :: FilePath
+    , runType :: RunType
+    }
+
+opts :: O.Parser Opts
 opts =
-  O.option O.str $
-        O.long "config"
-     <> O.short 'c'
-     <> O.metavar "CONFIG_FILE"
-     <> O.help "Path to config file"
+  Opts
+    <$> (O.option O.str $
+             O.long "config"
+          <> O.short 'c'
+          <> O.metavar "CONFIG_FILE"
+          <> O.help "Path to config file")
+    <*> (O.flag RealRun DryRun $
+             O.long "dry-run"
+          <> O.help "Validate config files without running.")
