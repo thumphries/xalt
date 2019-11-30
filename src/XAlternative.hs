@@ -10,6 +10,7 @@ import           Control.Monad (liftM2)
 import           Control.Monad.IO.Class (liftIO)
 
 import           Data.Foldable (for_)
+import qualified Data.List as List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid ((<>))
@@ -99,6 +100,32 @@ layoutThing sel = do
   for_ choice $ \l ->
     X.sendMessage (LC.JumpToLayout (T.unpack l))
 
+layoutActions :: Text -> X ()
+layoutActions sel = do
+  let
+    acts :: [(Text, [(Text, X ())])]
+    acts = [
+        ("BSP", [
+            ("Rotate", X.sendMessage BSP.Rotate)
+          , ("Swap", X.sendMessage BSP.Swap)
+          ])
+      ]
+
+    choose :: [(Text, X ())] -> X ()
+    choose things = do
+      choice <- liftIO $ select sel things fst
+      for_ choice $ \(_d, x) ->
+        x
+
+    guardLayout :: X (Maybe [(Text, X ())])
+    guardLayout = do
+      desc <- currentLayoutDesc
+      pure $ List.lookup desc acts
+
+  choices <- guardLayout
+  for_ choices $
+    choose
+
 thing :: Text -> [C.Scratchpad] -> C.Keymap -> X ()
 thing sel pads keymap = do
   let
@@ -161,6 +188,26 @@ thing sel pads keymap = do
   for_ choice $ \kb ->
     xCmd pads (C.kbCommand kb)
 
+currentWorkspaceName :: X Text
+currentWorkspaceName =
+  fmap (T.pack . windowSpaceId) currentWindowSpace
+
+currentLayoutDesc :: X Text
+currentLayoutDesc =
+  fmap (T.pack . X.description . windowSpaceLayout) currentWindowSpace
+
+currentWindowSpace :: X X.WindowSpace
+currentWindowSpace =
+  X.gets (W.workspace . W.current . X.windowset)
+
+windowSpaceId :: X.WindowSpace -> X.WorkspaceId
+windowSpaceId =
+  W.tag
+
+windowSpaceLayout :: X.WindowSpace -> Layout Window
+windowSpaceLayout =
+  W.layout
+
 runSelector :: Text -> [Text] -> IO Text
 runSelector sel input =
   fmap T.pack $
@@ -195,6 +242,7 @@ xKeys (C.Config (C.General _term sel _b _n _f _g) keymap _rules pads) c =
 
         , ((mm, xK_r), thing sel pads keymap)
         , ((mm, xK_e), layoutThing sel)
+        , ((mm, xK_w), layoutActions sel)
 
         -- TODO unsure if BSP goes into Command
         -- , ((mm, xK_r), X.sendMessage BSP.Rotate)
