@@ -28,7 +28,7 @@ import qualified XAlternative.Config as C
 
 import           XMonad (X, XConfig, Layout, KeyMask, KeySym)
 import qualified XMonad as X
-import           XMonad.Layout ((|||), Choose, Tall (..), Full (..), Mirror (..))
+import           XMonad.Layout (Tall (..), Full (..), Mirror (..))
 import           XMonad.Layout.Grid (Grid (..))
 import           XMonad.ManageHook ((=?), (-->))
 import qualified XMonad.ManageHook as MH
@@ -45,6 +45,8 @@ import           XMonad.Layout.BinarySpacePartition (BinarySpacePartition)
 import qualified XMonad.Layout.BinarySpacePartition as BSP
 import           XMonad.Layout.CenteredMaster (CenteredMaster, centerMaster)
 import           XMonad.Layout.Decoration (Decoration, DefaultShrinker, shrinkText)
+import           XMonad.Layout.LayoutCombinators ((|||))
+import qualified XMonad.Layout.LayoutCombinators as LC
 import           XMonad.Layout.LayoutModifier (ModifiedLayout)
 import           XMonad.Layout.NoBorders (Ambiguity (..), ConfigurableBorder, lessBorders)
 import           XMonad.Layout.Reflect (Reflect, reflectHoriz)
@@ -78,6 +80,24 @@ xConfig cfg@(C.Config g@(C.General term _sel bWidth nBorder fBorder _gaps) _keym
     , X.manageHook = xManageHook cfg
     , X.workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     }
+
+-- FIXME tie this knot with existentials
+layoutNames :: [Text]
+layoutNames = [
+    "BSP"
+  , "Split"
+  , "Left"
+  , "Right"
+  , "Middle"
+  , "Tile"
+  , "Full"
+  ]
+
+layoutThing :: Text -> X ()
+layoutThing sel = do
+  choice <- liftIO $ select sel layoutNames id
+  for_ choice $ \l ->
+    X.sendMessage (LC.JumpToLayout (T.unpack l))
 
 thing :: Text -> [C.Scratchpad] -> C.Keymap -> X ()
 thing sel pads keymap = do
@@ -136,26 +156,27 @@ thing sel pads keymap = do
       . T.replace "'" "&#39;"
       . T.replace "&" "&amp;"
 
-    runSelector :: [Text] -> IO Text
-    runSelector input =
-      fmap T.pack $
-        runProcessWithInput (T.unpack sel) [] (T.unpack (T.unlines input))
 
-    select :: [a] -> (a -> Text) -> IO (Maybe a)
-    select xs f = do
-      -- FIXME implies selector behaves like rofi
-      choice <- runSelector (fmap f xs)
-      pure $
-        case readMaybe (T.unpack choice) of
-          Just i ->
-            pure (xs !! i)
-          Nothing ->
-            Nothing
-
-  choice <- liftIO $ select keyss render
+  choice <- liftIO $ select sel keyss render
   for_ choice $ \kb ->
     xCmd pads (C.kbCommand kb)
 
+runSelector :: Text -> [Text] -> IO Text
+runSelector sel input =
+  fmap T.pack $
+    runProcessWithInput (T.unpack sel) [] (T.unpack (T.unlines input))
+
+select :: Text -> [a] -> (a -> Text) -> IO (Maybe a)
+select sel xs f = do
+  -- FIXME implies selector behaves exactly like rofi
+  -- FIXME multi select -> list of ints
+  choice <- runSelector sel (fmap f xs)
+  pure $
+    case readMaybe (T.unpack choice) of
+      Just i ->
+        pure (xs !! i)
+      Nothing ->
+        Nothing
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
 xKeys (C.Config (C.General _term sel _b _n _f _g) keymap _rules pads) c =
@@ -173,6 +194,7 @@ xKeys (C.Config (C.General _term sel _b _n _f _g) keymap _rules pads) c =
         , ((mm, xK_Down), move Snap.D)
 
         , ((mm, xK_r), thing sel pads keymap)
+        , ((mm, xK_e), layoutThing sel)
 
         -- TODO unsure if BSP goes into Command
         -- , ((mm, xK_r), X.sendMessage BSP.Rotate)
@@ -265,7 +287,7 @@ xCmd pads cmd =
 -- -----------------------------------------------------------------------------
 -- LayoutHook
 
-type (|||) = Choose
+type (|||) = LC.NewSelect
 infixr 5 |||
 
 type Layouts =
@@ -391,11 +413,11 @@ scratchpads =
   fmap scratchpad
 
 scratchpad :: C.Scratchpad -> SP.NamedScratchpad
-scratchpad (C.Scratchpad name cmd select act) =
+scratchpad (C.Scratchpad name cmd sel act) =
   SP.NS {
       SP.name = T.unpack name
     , SP.cmd = T.unpack cmd
-    , SP.query = selector select
+    , SP.query = selector sel
     , SP.hook = action act
     }
 
