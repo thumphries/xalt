@@ -132,6 +132,18 @@ scratchpadThing sel pads = do
   for_ choice $ \pad ->
     xCmd pads (C.Scratch (C.spName pad))
 
+hideFocusedScratchpad :: [C.Scratchpad] -> X ()
+hideFocusedScratchpad pads = do
+  X.withFocused $ \w ->
+    go pads w
+  where
+    go []     _ = pure ()
+    go (x:xs) w = do
+      b <- X.runQuery (selector (C.spSelector x)) w
+      if b
+        then xCmd pads (C.Scratch (C.spName x))
+        else go xs w
+
 thing :: Text -> [C.Scratchpad] -> C.Keymap -> X ()
 thing sel pads keymap = do
   let
@@ -180,6 +192,8 @@ thing sel pads keymap = do
         "Sink"
       C.Scratch x ->
         "Scratchpad " <> x
+      C.Hide ->
+        "Hide"
 
     escapeEntities :: Text -> Text
     escapeEntities =
@@ -188,7 +202,6 @@ thing sel pads keymap = do
       . T.replace "\"" "&quot;"
       . T.replace "'" "&#39;"
       . T.replace "&" "&amp;"
-
 
   choice <- liftIO $ select sel keyss render
   for_ choice $ \kb ->
@@ -338,6 +351,8 @@ xCmd pads cmd =
           W.sink w
     C.Scratch x ->
       SP.namedScratchpadAction (scratchpads pads) (T.unpack x)
+    C.Hide ->
+      hideFocusedScratchpad pads
 
 -- -----------------------------------------------------------------------------
 -- LayoutHook

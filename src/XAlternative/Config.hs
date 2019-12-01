@@ -61,6 +61,7 @@ data Command =
   | Float
   | Sink
   | Scratch Text
+  | Hide
   deriving (Eq, Ord, Show)
 
 newtype Rules = Rules {
@@ -132,6 +133,7 @@ validateCommand v =
   <||> (Float <$ atomConst "float" v)
   <||> (Sink <$ atomConst "sink" v)
   <||> (Scratch <$> section "scratch" v text)
+  <||> (Hide <$ atomConst "hide" v)
 
 validateRules :: Value -> Validation Rules
 validateRules v =
