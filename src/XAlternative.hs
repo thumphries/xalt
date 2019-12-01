@@ -126,6 +126,12 @@ layoutActions sel = do
   for_ choices $
     choose
 
+scratchpadThing :: Text -> [C.Scratchpad] -> X ()
+scratchpadThing sel pads = do
+  choice <- liftIO $ select sel pads C.spName
+  for_ choice $ \pad ->
+    xCmd pads (C.Scratch (C.spName pad))
+
 thing :: Text -> [C.Scratchpad] -> C.Keymap -> X ()
 thing sel pads keymap = do
   let
@@ -243,6 +249,7 @@ xKeys (C.Config (C.General _term sel _b _n _f _g) keymap _rules pads) c =
         , ((mm, xK_r), thing sel pads keymap)
         , ((mm, xK_e), layoutThing sel)
         , ((mm, xK_w), layoutActions sel)
+        , ((mm X..|. shiftMask, xK_grave), scratchpadThing sel pads)
 
         -- TODO unsure if BSP goes into Command
         -- , ((mm, xK_r), X.sendMessage BSP.Rotate)
