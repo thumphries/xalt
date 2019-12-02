@@ -298,9 +298,8 @@ newProject p = do
         , DP.projectDirectory = d
         , DP.projectStartHook = Nothing
         }
-    -- Still something busted here
-    liftIO $ putStrLn ("prj: " <> show n <> " dir: " <> show d)
     DP.switchProject j
+    DP.activateProject j
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
 xKeys (C.Config (C.General _term sel p _b _n _f _g) keymap _rules pads) c =
