@@ -12,11 +12,13 @@ import           Control.Monad.IO.Class (liftIO)
 
 import           Data.Char (isLetter)
 import           Data.Foldable (for_)
+import           Data.Function (on)
 import           Data.Functor (($>))
 import qualified Data.List as List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Monoid ((<>))
+import           Data.Ord (Down(..))
 import           Data.Ratio ((%))
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -66,7 +68,7 @@ import           XMonad.Util.CustomKeys (customKeys)
 import qualified XMonad.Util.EZConfig as EZ
 import qualified XMonad.Util.NamedScratchpad as SP
 import           XMonad.Util.Run (runProcessWithInput)
-
+import qualified XMonad.Util.WorkspaceCompare as Cmp
 
 xAlternative :: Config -> IO ()
 xAlternative cfg = do
@@ -301,6 +303,35 @@ newProject p = do
     DP.switchProject j
     DP.activateProject j
 
+-- | Workspace indexing with custom sort
+withNthWorkspace :: (String -> X.WindowSet -> X.WindowSet) -> Int -> X ()
+withNthWorkspace f wnum = do
+  sort <- workspaceSort
+  ws <- X.gets (fmap W.tag . sort . W.workspaces . X.windowset)
+  for_ (List.take 1 (List.drop wnum ws)) $ \w ->
+    X.windows $ f w
+
+-- | Custom workspace sort
+workspaceSort :: X Cmp.WorkspaceSort
+workspaceSort =
+  Cmp.mkWsSort $ do
+    idx <- Cmp.getWsIndex
+    pure $
+      mconcat [
+          purgatoryLast
+        , compare `on` (Down . fmap Down . idx)
+        , compare
+        ]
+  where
+    purgatoryLast l r =
+      case (l, r) of
+        -- NSP workspace for scratchpads
+        -- FIXME generalise
+        ("NSP" , "NSP") -> EQ
+        ("NSP" , _    ) -> GT
+        (_     , "NSP") -> LT
+        (_     , _    ) -> EQ
+
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
 xKeys (C.Config (C.General _term sel p _b _n _f _g) keymap _rules pads) c =
   let
@@ -337,9 +368,9 @@ xKeys (C.Config (C.General _term sel p _b _n _f _g) keymap _rules pads) c =
     oneTo9 mm =
       fmap (mm,) [xK_1..xK_9]
     switch1To9 mm =
-      zip (oneTo9 mm) (fmap (DW.withNthWorkspace W.greedyView) [0..])
+      zip (oneTo9 mm) (fmap (withNthWorkspace W.greedyView) [0..])
     move1To9 mm =
-      zip (oneTo9 (mm X..|. shiftMask)) (fmap (DW.withNthWorkspace W.shift) [0..])
+      zip (oneTo9 (mm X..|. shiftMask)) (fmap (withNthWorkspace W.shift) [0..])
 
     toez (C.Keybind k cmd _d) =
       (T.unpack k, xCmd pads cmd)
