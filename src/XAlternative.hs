@@ -7,9 +7,10 @@
 module XAlternative where
 
 
-import           Control.Monad (guard, liftM2)
+import           Control.Monad (guard, liftM2, unless)
 import           Control.Monad.IO.Class (liftIO)
 
+import           Data.Char (isLetter)
 import           Data.Foldable (for_)
 import           Data.Functor (($>))
 import qualified Data.List as List
@@ -84,7 +85,7 @@ xConfig cfg@(C.Config g@(C.General term _sel _pr bWidth nBorder fBorder _gaps) _
       , X.mouseBindings = xMouseBindings
       , X.layoutHook = xLayoutHook g
       , X.manageHook = xManageHook cfg
-      , X.workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+      , X.workspaces = ["1"]
       }
 
 projects :: [DP.Project]
@@ -269,7 +270,7 @@ prompt p = do
   out <-
     runProcessWithInput (T.unpack p) [] []
   pure $
-    guard (not (null out)) $> T.pack out
+    guard (not (null out)) $> T.strip (T.pack out)
 
 renameWorkspace :: Text -> X ()
 renameWorkspace p = do
@@ -277,6 +278,29 @@ renameWorkspace p = do
   new <- liftIO $ prompt p
   for_ new $ \name ->
     DW.renameWorkspaceByName (T.unpack name)
+
+addWorkspace :: Text -> X ()
+addWorkspace p = do
+  new <- liftIO $ prompt p
+  for_ new $ \name ->
+    DW.addWorkspace (T.unpack name)
+
+newProject :: Text -> X ()
+newProject p = do
+  pdir <- liftIO $ prompt p
+  for_ pdir $ \dir ->
+    unless (T.null dir) $ do
+    let
+      n = T.unpack (T.takeWhileEnd isLetter dir)
+      d = T.unpack dir
+      j = DP.Project {
+          DP.projectName = n
+        , DP.projectDirectory = d
+        , DP.projectStartHook = Nothing
+        }
+    -- Still something busted here
+    liftIO $ putStrLn ("prj: " <> show n <> " dir: " <> show d)
+    DP.switchProject j
 
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
 xKeys (C.Config (C.General _term sel p _b _n _f _g) keymap _rules pads) c =
@@ -299,7 +323,14 @@ xKeys (C.Config (C.General _term sel p _b _n _f _g) keymap _rules pads) c =
         , ((mm, xK_w), layoutActions sel)
         , ((mm X..|. shiftMask, xK_grave), scratchpadThing sel pads)
         , ((mm, xK_p), projectThing sel)
-        , ((mm X..|. shiftMask, xK_p), renameWorkspace p)
+
+        -- dynamic projects experiments
+        , ((mm X..|. shiftMask, xK_n), newProject p)
+
+        -- dynamic workspace experiments
+        , ((mm X..|. shiftMask, xK_p), addWorkspace p)
+        , ((mm X..|. shiftMask, xK_BackSpace), DW.removeWorkspace)
+        -- , ((mm X..|. shiftMask, xK_p), renameWorkspace p)
         ] <> switch1To9 mm
           <> move1To9 mm) c
 
