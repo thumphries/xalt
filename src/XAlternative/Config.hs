@@ -33,6 +33,7 @@ data Config = Config {
 data General = General {
     terminal :: Text
   , selector :: Text
+  , prompt :: Text
   , borderWidth :: Integer
   , normalBorderColor :: Text
   , focusedBorderColor :: Text
@@ -107,6 +108,7 @@ validateGeneral v =
     General
       <$> section "terminal" s text
       <*> section "selector" s text
+      <*> section "prompt" s text
       <*> section "border-width" s integer
       <*> section "border-color" s text
       <*> section "border-color-focused" s text

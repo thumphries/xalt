@@ -6,10 +6,11 @@
 module XAlternative where
 
 
-import           Control.Monad (liftM2)
+import           Control.Monad (guard, liftM2)
 import           Control.Monad.IO.Class (liftIO)
 
 import           Data.Foldable (for_)
+import           Data.Functor (($>))
 import qualified Data.List as List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -38,6 +39,8 @@ import qualified XMonad.StackSet as W
 
 import           XMonad.Actions.CopyWindow (copyToAll, killAllOtherCopies)
 import           XMonad.Actions.DwmPromote (dwmpromote)
+import qualified XMonad.Actions.DynamicProjects as DP
+import qualified XMonad.Actions.DynamicWorkspaces as DW
 import qualified XMonad.Actions.FloatSnap as Snap
 import qualified XMonad.Hooks.EwmhDesktops as EWMH
 import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
@@ -68,19 +71,35 @@ xAlternative cfg = do
   X.launch $ taffybar (xConfig cfg)
 
 xConfig :: Config -> XConfig Layouts
-xConfig cfg@(C.Config g@(C.General term _sel bWidth nBorder fBorder _gaps) _keymap _rules _pads) =
-  X.def {
-      X.terminal = T.unpack term
-    , X.modMask = mod4Mask
-    , X.borderWidth = fromIntegral bWidth
-    , X.normalBorderColor = T.unpack nBorder
-    , X.focusedBorderColor = T.unpack fBorder
-    , X.keys = xKeys cfg
-    , X.mouseBindings = xMouseBindings
-    , X.layoutHook = xLayoutHook g
-    , X.manageHook = xManageHook cfg
-    , X.workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-    }
+xConfig cfg@(C.Config g@(C.General term _sel _pr bWidth nBorder fBorder _gaps) _keymap _rules _pads) =
+  DP.dynamicProjects projects $
+    X.def {
+        X.terminal = T.unpack term
+      , X.modMask = mod4Mask
+      , X.borderWidth = fromIntegral bWidth
+      , X.normalBorderColor = T.unpack nBorder
+      , X.focusedBorderColor = T.unpack fBorder
+      , X.keys = xKeys cfg
+      , X.mouseBindings = xMouseBindings
+      , X.layoutHook = xLayoutHook g
+      , X.manageHook = xManageHook cfg
+      , X.workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+      }
+
+projects :: [DP.Project]
+projects = [
+    DP.Project {
+        DP.projectName = "nix"
+      , DP.projectDirectory = "~/src/nix-config"
+      , DP.projectStartHook = Nothing
+      }
+  ]
+
+projectThing :: Text -> X ()
+projectThing sel = do
+  choice <- liftIO $ select sel projects (T.pack . DP.projectName)
+  for_ choice $ \p ->
+    DP.switchProject p
 
 -- FIXME tie this knot with existentials
 layoutNames :: [Text]
@@ -244,8 +263,22 @@ select sel xs f = do
       Nothing ->
         Nothing
 
+prompt :: Text -> IO (Maybe Text)
+prompt p = do
+  out <-
+    runProcessWithInput (T.unpack p) [] []
+  pure $
+    guard (not (null out)) $> T.pack out
+
+renameWorkspace :: Text -> X ()
+renameWorkspace p = do
+  -- FIXME probably needs special treatment for projects
+  new <- liftIO $ prompt p
+  for_ new $ \name ->
+    DW.renameWorkspaceByName (T.unpack name)
+
 xKeys :: Config -> XConfig Layout -> Map (KeyMask, KeySym) (X ())
-xKeys (C.Config (C.General _term sel _b _n _f _g) keymap _rules pads) c =
+xKeys (C.Config (C.General _term sel p _b _n _f _g) keymap _rules pads) c =
   let
     move d =
       X.withFocused (Snap.snapMove d Nothing)
@@ -259,10 +292,13 @@ xKeys (C.Config (C.General _term sel _b _n _f _g) keymap _rules pads) c =
         , ((mm, xK_Up), move Snap.U)
         , ((mm, xK_Down), move Snap.D)
 
+        -- menu / selector experiments
         , ((mm, xK_r), thing sel pads keymap)
         , ((mm, xK_e), layoutThing sel)
         , ((mm, xK_w), layoutActions sel)
         , ((mm X..|. shiftMask, xK_grave), scratchpadThing sel pads)
+        , ((mm, xK_p), projectThing sel)
+        , ((mm X..|. shiftMask, xK_p), renameWorkspace p)
 
         -- TODO unsure if BSP goes into Command
         -- , ((mm, xK_r), X.sendMessage BSP.Rotate)
