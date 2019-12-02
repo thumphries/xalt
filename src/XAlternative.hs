@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 module XAlternative where
 
@@ -299,11 +300,16 @@ xKeys (C.Config (C.General _term sel p _b _n _f _g) keymap _rules pads) c =
         , ((mm X..|. shiftMask, xK_grave), scratchpadThing sel pads)
         , ((mm, xK_p), projectThing sel)
         , ((mm X..|. shiftMask, xK_p), renameWorkspace p)
+        ] <> switch1To9 mm
+          <> move1To9 mm) c
 
-        -- TODO unsure if BSP goes into Command
-        -- , ((mm, xK_r), X.sendMessage BSP.Rotate)
-        -- , ((mm, xK_t), X.sendMessage BSP.Swap)
-        ]) c
+    -- Workspaces are dynamic, so these have to be overridden
+    oneTo9 mm =
+      fmap (mm,) [xK_1..xK_9]
+    switch1To9 mm =
+      zip (oneTo9 mm) (fmap (DW.withNthWorkspace W.greedyView) [0..])
+    move1To9 mm =
+      zip (oneTo9 (mm X..|. shiftMask)) (fmap (DW.withNthWorkspace W.shift) [0..])
 
     toez (C.Keybind k cmd _d) =
       (T.unpack k, xCmd pads cmd)
