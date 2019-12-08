@@ -424,11 +424,20 @@ xMouseBindings cfg =
   in
     custom cfg <> X.mouseBindings X.def cfg
 
+spawn :: Text -> X ()
+spawn cmd = do
+  wsName <- currentWorkspaceName
+  X.spawn . T.unpack $
+    T.unwords [
+        "XALT_WORKSPACE=" <> wsName
+      , cmd
+      ]
+
 xCmd :: [C.Scratchpad] -> C.Command -> X ()
 xCmd pads cmd =
   case cmd of
     C.Spawn x ->
-      X.spawn (T.unpack x)
+      spawn x
     C.Restart ->
       X.restart "xalt" True
     C.Promote ->
