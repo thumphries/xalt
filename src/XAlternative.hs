@@ -10,7 +10,6 @@ module XAlternative where
 import           Control.Monad (guard, liftM2, unless)
 import           Control.Monad.IO.Class (liftIO)
 
-import           Data.Char (isLetter)
 import           Data.Foldable (for_)
 import           Data.Function (on)
 import           Data.Functor (($>))
@@ -25,6 +24,8 @@ import qualified Data.Text as T
 
 import           Graphics.X11.Types
 
+import           System.Directory (getHomeDirectory, listDirectory)
+import           System.FilePath (takeBaseName)
 import qualified System.Taffybar.Support.PagerHints as TP
 
 import           Text.Read (readMaybe)
@@ -288,13 +289,21 @@ addWorkspace p = do
     DW.addWorkspace (T.unpack name)
 
 newProject :: Text -> X ()
-newProject p = do
-  pdir <- liftIO $ prompt p
+newProject sel = do
+  -- FIXME configurable project root
+  srcs <-
+    liftIO $ do
+      home <- getHomeDirectory
+      srcs <- listDirectory (home <> "/src") {- may not all be directories... -}
+      pure srcs
+
+  pdir <- liftIO $ select sel srcs (T.pack . takeBaseName)
+
   for_ pdir $ \dir ->
-    unless (T.null dir) $ do
+    unless (List.null dir) $ do
     let
-      n = T.unpack (T.takeWhileEnd isLetter dir)
-      d = T.unpack dir
+      n = takeBaseName dir
+      d = dir
       j = DP.Project {
           DP.projectName = n
         , DP.projectDirectory = d
@@ -355,7 +364,7 @@ xKeys (C.Config (C.General _term sel p _b _n _f _g) keymap _rules pads) c =
         , ((mm, xK_p), projectThing sel)
 
         -- dynamic projects experiments
-        , ((mm X..|. shiftMask, xK_n), newProject p)
+        , ((mm X..|. shiftMask, xK_n), newProject sel)
 
         -- dynamic workspace experiments
         , ((mm X..|. shiftMask, xK_p), addWorkspace p)

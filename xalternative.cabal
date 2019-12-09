@@ -18,6 +18,7 @@ executable xalt
   build-depends:
                        base
                      , optparse-applicative
+                     , pretty-show
                      , xalternative
 
 executable xbar
@@ -50,6 +51,7 @@ library
                      , config-value
                      , containers
                      , directory
+                     , filepath
                      , microlens
                      , taffybar
                      , text
