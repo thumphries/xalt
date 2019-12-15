@@ -25,7 +25,7 @@ import qualified Data.Text as T
 import           Graphics.X11.Types
 
 import           System.Directory (getHomeDirectory, listDirectory)
-import           System.FilePath (takeBaseName)
+import           System.FilePath ((</>), takeBaseName)
 import qualified System.Taffybar.Support.PagerHints as TP
 
 import           Text.Read (readMaybe)
@@ -294,7 +294,8 @@ newProject sel = do
   srcs <-
     liftIO $ do
       home <- getHomeDirectory
-      srcs <- listDirectory (home <> "/src") {- may not all be directories... -}
+      let prjdir = home </> "src"
+      srcs <- fmap (fmap (prjdir </>)) (listDirectory prjdir)
       pure srcs
 
   pdir <- liftIO $ select sel srcs (T.pack . takeBaseName)
