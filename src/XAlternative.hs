@@ -94,7 +94,17 @@ xConfig cfg@(C.Config g@(C.General term _sel _pr bWidth nBorder fBorder _gaps) _
 projects :: [DP.Project]
 projects = [
     DP.Project {
-        DP.projectName = "nix"
+        DP.projectName = "2: dev"
+      , DP.projectDirectory = "~/src/"
+      , DP.projectStartHook = Nothing
+      }
+  , DP.Project {
+        DP.projectName = "3: aws"
+      , DP.projectDirectory = "~/src/"
+      , DP.projectStartHook = Nothing
+      }
+  , DP.Project {
+        DP.projectName = "4: nix"
       , DP.projectDirectory = "~/src/nix-config"
       , DP.projectStartHook = Nothing
       }
