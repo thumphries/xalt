@@ -16,7 +16,6 @@ import           Data.Functor (($>))
 import qualified Data.List as List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import           Data.Monoid ((<>))
 import           Data.Ord (Down(..))
 import           Data.Ratio ((%))
 import           Data.Text (Text)
@@ -26,14 +25,13 @@ import           Graphics.X11.Types
 
 import           System.Directory (getHomeDirectory, listDirectory)
 import           System.FilePath ((</>), takeBaseName)
-import qualified System.Taffybar.Support.PagerHints as TP
 
 import           Text.Read (readMaybe)
 
 import           XAlternative.Config (Config)
 import qualified XAlternative.Config as C
 
-import           XMonad (X, XConfig, Layout, KeyMask, KeySym)
+import           XMonad (X, XConfig, Layout)
 import qualified XMonad as X
 import           XMonad.Layout (Tall (..), Full (..), Mirror (..))
 import           XMonad.Layout.Grid (Grid (..))
@@ -50,6 +48,7 @@ import qualified XMonad.Actions.FloatSnap as Snap
 import qualified XMonad.Hooks.EwmhDesktops as EWMH
 import           XMonad.Hooks.ManageDocks (AvoidStruts, ToggleStruts (..))
 import qualified XMonad.Hooks.ManageDocks as Docks
+import qualified XMonad.Hooks.TaffybarPagerHints as TP
 import           XMonad.Layout.BinarySpacePartition (BinarySpacePartition)
 import qualified XMonad.Layout.BinarySpacePartition as BSP
 import           XMonad.Layout.CenteredMaster (CenteredMaster, centerMaster)
@@ -73,7 +72,8 @@ import qualified XMonad.Util.WorkspaceCompare as Cmp
 
 xAlternative :: Config -> IO ()
 xAlternative cfg = do
-  X.launch $ taffybar (xConfig cfg)
+  dirs <- X.getDirectories
+  X.launch (taffybar (xConfig cfg)) dirs
 
 xConfig :: Config -> XConfig Layouts
 xConfig cfg@(C.Config g@(C.General term _sel _pr bWidth nBorder fBorder _gaps) _keymap _rules _pads) =
@@ -479,7 +479,7 @@ xCmd pads cmd =
 -- -----------------------------------------------------------------------------
 -- LayoutHook
 
-type (|||) = LC.NewSelect
+type (|||) = X.Choose
 infixr 5 |||
 
 type Layouts =
@@ -626,15 +626,8 @@ taffybar cfg = do
     }
 
 ewmh :: XConfig l -> XConfig l
-ewmh cfg =
-  cfg {
-      X.startupHook = X.startupHook cfg <> EWMH.ewmhDesktopsStartup
-    , X.handleEventHook = X.handleEventHook cfg <> EWMH.ewmhDesktopsEventHook
-    , X.logHook = X.logHook cfg <> logHookNSP
-    }
-  where
-    logHookNSP =
-      EWMH.ewmhDesktopsLogHookCustom SP.namedScratchpadFilterOutWorkspace
+ewmh =
+  EWMH.setEwmhWorkspaceSort (pure $ Cmp.filterOutWs [SP.scratchpadWorkspaceTag]) . EWMH.ewmh
 
 setStrutsKey :: XConfig a -> Map (KeyMask, KeySym) (X ())
 setStrutsKey =

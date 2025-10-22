@@ -1,7 +1,7 @@
 { mkDerivation, base, config-value, containers, directory, filepath
 , gi-gtk, gi-gtk-hs, gtk3, microlens, mtl, optparse-applicative
 , pretty-show, stdenv, taffybar, text, transformers, X11, xmonad
-, xmonad-contrib
+, xmonad-contrib, lib
 }:
 mkDerivation {
   pname = "xalternative";
@@ -19,5 +19,5 @@ mkDerivation {
   ];
   homepage = "https://github.com/thumphries/xalternative";
   description = "XMonad+";
-  license = stdenv.lib.licenses.bsd3;
+  license = lib.licenses.bsd3;
 }

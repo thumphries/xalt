@@ -9,7 +9,6 @@ import           Control.Monad.IO.Class (liftIO)
 
 import           Data.GI.Gtk.Threading (postGUIASync)
 import           Data.Int (Int64)
-import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
@@ -32,7 +31,7 @@ import           Text.Printf (printf)
 main :: IO ()
 main = do
   T.startTaffybar . SC.toTaffyConfig $ SC.defaultSimpleTaffyConfig {
-      SC.barHeight = 32
+      SC.barHeight = SC.ExactSize 32
     , SC.widgetSpacing = 16
     , SC.startWidgets = [
           workspaces

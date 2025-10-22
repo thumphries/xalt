@@ -16,7 +16,6 @@ module XAlternative.Config (
 
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import           Data.Semigroup (Semigroup)
 import           Data.Text (Text)
 import           Data.Traversable (for)
 

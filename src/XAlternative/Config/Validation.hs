@@ -58,7 +58,8 @@ data ValidationError =
   | ExpectedAtom CV.Position Value
   | ExpectedText CV.Position Value
   | ExpectedNumber CV.Position Value
-  | ExpectedFloating CV.Position Value
+  | ExpectedRational CV.Position Value
+  | ExpectedInteger CV.Position Value
   | ExpectedList CV.Position Value
   | ErrorWithContext [Text] ValidationError
   | ChoiceExhausted
@@ -145,22 +146,26 @@ atomConst expect val =
       then pure name
       else throwV (ExpectedAtomConst (CV.valueAnn val) expect name)
 
+number :: Value -> Validation CV.Number 
+number val =
+  case val of
+    CV.Number _ann num ->
+      pure num
+    _ ->
+      throwV (ExpectedNumber(CV.valueAnn val) val)
 
 integer :: Value -> Validation Integer
 integer val =
-  noteV (ExpectedNumber (CV.valueAnn val) val) (val ^? CL.number)
+  bindValidation (number val) $
+    noteV (ExpectedInteger (CV.valueAnn val) val) . CV.numberToInteger
 
 float :: Value -> Validation Float
-float val =
-  case val of
-    CV.Floating _ann coef expn ->
-      pure (fromIntegral coef * 10.0 ^^ expn)
-    _ ->
-      throwV (ExpectedFloating (CV.valueAnn val) val)
+float =
+  fmap fromRational . rational
 
 rational :: Value -> Validation Rational
 rational =
-  fmap toRational . float
+  fmap CV.numberToRational . number
 
 list :: ([Value] -> Validation a) -> Value -> Validation a
 list k val =

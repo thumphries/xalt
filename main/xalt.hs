@@ -1,8 +1,6 @@
 
 import           Control.Applicative ((<**>))
 
-import           Data.Monoid ((<>))
-
 import qualified Options.Applicative as O
 
 import           System.Exit (ExitCode (..), exitWith)
